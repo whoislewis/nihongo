@@ -1,0 +1,21 @@
+# Python files (data extraction scripts)
+*.py
+__pycache__/
+*.pyc
+
+# Large generated files
+vocabulary.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
