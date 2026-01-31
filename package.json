@@ -1,0 +1,11 @@
+{
+  "name": "nihongo-app",
+  "version": "1.0.0",
+  "description": "Japanese learning app with SRS vocabulary system",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
