@@ -5,12 +5,14 @@ const { useState, useEffect, useMemo } = React;
 const Kanji = ({ vocabulary, progress }) => {
     const [activeTab, setActiveTab] = useState('intro');
     const [selectedRadical, setSelectedRadical] = useState(null);
+    const [selectedRadicalIndex, setSelectedRadicalIndex] = useState(0);
     const [selectedKanji, setSelectedKanji] = useState(null);
     const [radicalProgress, setRadicalProgress] = useState({});
     const [kanjiProgress, setKanjiProgress] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [introCardIndex, setIntroCardIndex] = useState(0);
+    const [showAllWords, setShowAllWords] = useState(false);
 
     // Load progress from storage
     useEffect(() => {
@@ -19,6 +21,29 @@ const Kanji = ({ vocabulary, progress }) => {
         setRadicalProgress(savedRadicalProgress);
         setKanjiProgress(savedKanjiProgress);
     }, []);
+
+    // Play audio for any Japanese text
+    const playAudio = (text) => {
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ja-JP';
+            utterance.rate = 0.7;
+            speechSynthesis.speak(utterance);
+        }
+    };
+
+    // ESC key handler for closing modals
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                if (selectedRadical) setSelectedRadical(null);
+                if (selectedKanji) setSelectedKanji(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedRadical, selectedKanji]);
 
     // Extract kanji from vocabulary
     const extractedKanji = useMemo(() => {
@@ -71,6 +96,7 @@ const Kanji = ({ vocabulary, progress }) => {
                     <div className="kanji-example-breakdown">
                         <div className="example-kanji">
                             <span className="big-kanji japanese">休</span>
+                            <button className="btn-audio-inline" onClick={() => playAudio('やすむ')} title="Play: yasumu">🔊</button>
                             <span className="kanji-meaning">REST</span>
                         </div>
                         <span className="equals">=</span>
@@ -104,27 +130,42 @@ const Kanji = ({ vocabulary, progress }) => {
                     <div className="radicals-showcase">
                         <div className="radical-showcase-item">
                             <span className="showcase-char japanese">氵</span>
+                            <button className="btn-audio-sm" onClick={() => playAudio('さんずい')} title="Play: sanzui">🔊</button>
                             <div className="showcase-info">
                                 <span className="showcase-meaning">water</span>
                                 <span className="showcase-name">"sanzui"</span>
                             </div>
-                            <span className="showcase-examples japanese">海 池 波</span>
+                            <div className="showcase-examples">
+                                <span className="japanese" onClick={() => playAudio('うみ')}>海</span>
+                                <span className="japanese" onClick={() => playAudio('いけ')}>池</span>
+                                <span className="japanese" onClick={() => playAudio('なみ')}>波</span>
+                            </div>
                         </div>
                         <div className="radical-showcase-item">
                             <span className="showcase-char japanese">心</span>
+                            <button className="btn-audio-sm" onClick={() => playAudio('こころ')} title="Play: kokoro">🔊</button>
                             <div className="showcase-info">
                                 <span className="showcase-meaning">heart/mind</span>
                                 <span className="showcase-name">"kokoro"</span>
                             </div>
-                            <span className="showcase-examples japanese">思 感 愛</span>
+                            <div className="showcase-examples">
+                                <span className="japanese" onClick={() => playAudio('おもう')}>思</span>
+                                <span className="japanese" onClick={() => playAudio('かんじる')}>感</span>
+                                <span className="japanese" onClick={() => playAudio('あい')}>愛</span>
+                            </div>
                         </div>
                         <div className="radical-showcase-item">
                             <span className="showcase-char japanese">木</span>
+                            <button className="btn-audio-sm" onClick={() => playAudio('き')} title="Play: ki">🔊</button>
                             <div className="showcase-info">
                                 <span className="showcase-meaning">tree/wood</span>
                                 <span className="showcase-name">"ki"</span>
                             </div>
-                            <span className="showcase-examples japanese">林 森 本</span>
+                            <div className="showcase-examples">
+                                <span className="japanese" onClick={() => playAudio('はやし')}>林</span>
+                                <span className="japanese" onClick={() => playAudio('もり')}>森</span>
+                                <span className="japanese" onClick={() => playAudio('ほん')}>本</span>
+                            </div>
                         </div>
                     </div>
                     <p className="intro-hint">
@@ -145,38 +186,57 @@ const Kanji = ({ vocabulary, progress }) => {
                     <div className="combination-examples">
                         <div className="combination-item">
                             <div className="combo-formula">
-                                <span className="combo-part japanese">日</span>
-                                <span className="combo-meaning">sun</span>
-                                <span className="combo-plus">+</span>
-                                <span className="combo-part japanese">月</span>
-                                <span className="combo-meaning">moon</span>
-                                <span className="combo-equals">=</span>
-                                <span className="combo-result japanese">明</span>
-                                <span className="combo-meaning">bright</span>
+                                <div className="combo-part-group">
+                                    <span className="combo-part japanese">日</span>
+                                    <span className="combo-label">sun</span>
+                                </div>
+                                <span className="combo-operator">+</span>
+                                <div className="combo-part-group">
+                                    <span className="combo-part japanese">月</span>
+                                    <span className="combo-label">moon</span>
+                                </div>
+                                <span className="combo-operator">=</span>
+                                <div className="combo-result-group">
+                                    <span className="combo-result japanese">明</span>
+                                    <button className="btn-audio-xs" onClick={() => playAudio('あかるい')}>🔊</button>
+                                    <span className="combo-label">bright</span>
+                                </div>
                             </div>
                             <p className="combo-story">Sun and moon together = <strong>bright</strong></p>
                         </div>
                         <div className="combination-item">
                             <div className="combo-formula">
-                                <span className="combo-part japanese">女</span>
-                                <span className="combo-meaning">woman</span>
-                                <span className="combo-plus">+</span>
-                                <span className="combo-part japanese">子</span>
-                                <span className="combo-meaning">child</span>
-                                <span className="combo-equals">=</span>
-                                <span className="combo-result japanese">好</span>
-                                <span className="combo-meaning">like/love</span>
+                                <div className="combo-part-group">
+                                    <span className="combo-part japanese">女</span>
+                                    <span className="combo-label">woman</span>
+                                </div>
+                                <span className="combo-operator">+</span>
+                                <div className="combo-part-group">
+                                    <span className="combo-part japanese">子</span>
+                                    <span className="combo-label">child</span>
+                                </div>
+                                <span className="combo-operator">=</span>
+                                <div className="combo-result-group">
+                                    <span className="combo-result japanese">好</span>
+                                    <button className="btn-audio-xs" onClick={() => playAudio('すき')}>🔊</button>
+                                    <span className="combo-label">like/love</span>
+                                </div>
                             </div>
                             <p className="combo-story">A woman with her child = <strong>love</strong></p>
                         </div>
                         <div className="combination-item">
                             <div className="combo-formula">
-                                <span className="combo-part japanese">木</span>
-                                <span className="combo-meaning">tree</span>
-                                <span className="combo-plus">×3</span>
-                                <span className="combo-equals">=</span>
-                                <span className="combo-result japanese">森</span>
-                                <span className="combo-meaning">forest</span>
+                                <div className="combo-part-group">
+                                    <span className="combo-part japanese">木</span>
+                                    <span className="combo-label">tree</span>
+                                </div>
+                                <span className="combo-operator">×3</span>
+                                <span className="combo-operator">=</span>
+                                <div className="combo-result-group">
+                                    <span className="combo-result japanese">森</span>
+                                    <button className="btn-audio-xs" onClick={() => playAudio('もり')}>🔊</button>
+                                    <span className="combo-label">forest</span>
+                                </div>
                             </div>
                             <p className="combo-story">Three trees together = <strong>forest</strong></p>
                         </div>
@@ -192,35 +252,42 @@ const Kanji = ({ vocabulary, progress }) => {
                     <p className="intro-text">
                         Can you identify the radicals in these kanji? Look for familiar patterns!
                     </p>
-                    <div className="practice-grid">
-                        <div className="practice-item">
-                            <span className="practice-kanji japanese">話</span>
-                            <div className="practice-answer">
+                    <div className="practice-grid-intro">
+                        <div className="practice-item-intro">
+                            <div className="practice-kanji-box">
+                                <span className="practice-kanji japanese">話</span>
+                                <button className="btn-audio-xs" onClick={() => playAudio('はなす')}>🔊</button>
+                            </div>
+                            <div className="practice-breakdown">
                                 <span className="practice-radical japanese">言</span>
-                                <span className="practice-plus">+</span>
+                                <span className="practice-op">+</span>
                                 <span className="practice-radical japanese">舌</span>
-                                <span className="practice-hint">(speech + tongue = talk)</span>
                             </div>
+                            <span className="practice-hint">(speech + tongue = talk)</span>
                         </div>
-                        <div className="practice-item">
-                            <span className="practice-kanji japanese">聞</span>
-                            <div className="practice-answer">
+                        <div className="practice-item-intro">
+                            <div className="practice-kanji-box">
+                                <span className="practice-kanji japanese">聞</span>
+                                <button className="btn-audio-xs" onClick={() => playAudio('きく')}>🔊</button>
+                            </div>
+                            <div className="practice-breakdown">
                                 <span className="practice-radical japanese">門</span>
-                                <span className="practice-plus">+</span>
+                                <span className="practice-op">+</span>
                                 <span className="practice-radical japanese">耳</span>
-                                <span className="practice-hint">(gate + ear = hear)</span>
                             </div>
+                            <span className="practice-hint">(gate + ear = hear)</span>
                         </div>
-                        <div className="practice-item">
-                            <span className="practice-kanji japanese">語</span>
-                            <div className="practice-answer">
-                                <span className="practice-radical japanese">言</span>
-                                <span className="practice-plus">+</span>
-                                <span className="practice-radical japanese">五</span>
-                                <span className="practice-plus">+</span>
-                                <span className="practice-radical japanese">口</span>
-                                <span className="practice-hint">(speech + five + mouth = language)</span>
+                        <div className="practice-item-intro">
+                            <div className="practice-kanji-box">
+                                <span className="practice-kanji japanese">語</span>
+                                <button className="btn-audio-xs" onClick={() => playAudio('ご')}>🔊</button>
                             </div>
+                            <div className="practice-breakdown">
+                                <span className="practice-radical japanese">言</span>
+                                <span className="practice-op">+</span>
+                                <span className="practice-radical japanese">吾</span>
+                            </div>
+                            <span className="practice-hint">(speech + I/self = language)</span>
                         </div>
                     </div>
                     <p className="intro-hint">
@@ -331,23 +398,26 @@ const Kanji = ({ vocabulary, progress }) => {
                 <p className="intro-subtitle">The Building Blocks of Japanese Writing</p>
             </div>
 
-            <div className="intro-card-stack">
-                <div className="intro-card">
-                    <h3>{introCards[introCardIndex].title}</h3>
-                    <div className="intro-card-content">
-                        {introCards[introCardIndex].content}
-                    </div>
-                </div>
+            <div className="intro-card-wrapper">
+                {/* Left Arrow */}
+                <button
+                    className="side-nav-arrow side-nav-left"
+                    onClick={() => setIntroCardIndex(Math.max(0, introCardIndex - 1))}
+                    disabled={introCardIndex === 0}
+                    title="Previous"
+                >
+                    ‹
+                </button>
 
-                {/* Navigation */}
-                <div className="intro-card-nav">
-                    <button
-                        className="intro-nav-btn prev"
-                        onClick={() => setIntroCardIndex(Math.max(0, introCardIndex - 1))}
-                        disabled={introCardIndex === 0}
-                    >
-                        ← Previous
-                    </button>
+                <div className="intro-card-stack">
+                    <div className="intro-card">
+                        <h3>{introCards[introCardIndex].title}</h3>
+                        <div className="intro-card-content">
+                            {introCards[introCardIndex].content}
+                        </div>
+                    </div>
+
+                    {/* Progress dots */}
                     <div className="intro-card-progress">
                         <span className="progress-text">{introCardIndex + 1} of {totalIntroCards}</span>
                         <div className="progress-dots">
@@ -360,14 +430,17 @@ const Kanji = ({ vocabulary, progress }) => {
                             ))}
                         </div>
                     </div>
-                    <button
-                        className="intro-nav-btn next"
-                        onClick={() => setIntroCardIndex(Math.min(totalIntroCards - 1, introCardIndex + 1))}
-                        disabled={introCardIndex === totalIntroCards - 1}
-                    >
-                        Next →
-                    </button>
                 </div>
+
+                {/* Right Arrow */}
+                <button
+                    className="side-nav-arrow side-nav-right"
+                    onClick={() => setIntroCardIndex(Math.min(totalIntroCards - 1, introCardIndex + 1))}
+                    disabled={introCardIndex === totalIntroCards - 1}
+                    title="Next"
+                >
+                    ›
+                </button>
             </div>
         </div>
     );
@@ -470,14 +543,23 @@ const Kanji = ({ vocabulary, progress }) => {
                 {selectedRadical && (
                     <RadicalDetailModal
                         radical={selectedRadical}
+                        radicalIndex={searchedRadicals.findIndex(r => r.char === selectedRadical.char)}
+                        totalRadicals={searchedRadicals.length}
                         categories={categories}
                         radicalProgress={radicalProgress}
                         extractedKanji={extractedKanji}
                         vocabulary={vocabulary}
                         onClose={() => setSelectedRadical(null)}
+                        onPrev={() => {
+                            const currentIdx = searchedRadicals.findIndex(r => r.char === selectedRadical.char);
+                            if (currentIdx > 0) setSelectedRadical(searchedRadicals[currentIdx - 1]);
+                        }}
+                        onNext={() => {
+                            const currentIdx = searchedRadicals.findIndex(r => r.char === selectedRadical.char);
+                            if (currentIdx < searchedRadicals.length - 1) setSelectedRadical(searchedRadicals[currentIdx + 1]);
+                        }}
                         onMarkLearned={() => {
                             markRadicalLearned(selectedRadical.char);
-                            setSelectedRadical(null);
                         }}
                         onSelectKanji={(kanjiData) => {
                             setSelectedRadical(null);
@@ -605,11 +687,15 @@ const Kanji = ({ vocabulary, progress }) => {
 // Radical Detail Modal Component - Enhanced with more educational content
 const RadicalDetailModal = ({
     radical,
+    radicalIndex,
+    totalRadicals,
     categories,
     radicalProgress,
     extractedKanji,
     vocabulary,
     onClose,
+    onPrev,
+    onNext,
     onMarkLearned,
     onSelectKanji
 }) => {
@@ -625,6 +711,17 @@ const RadicalDetailModal = ({
             speechSynthesis.speak(utterance);
         }
     };
+
+    // ESC key and arrow key handler
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+            if (e.key === 'ArrowLeft' && radicalIndex > 0) onPrev();
+            if (e.key === 'ArrowRight' && radicalIndex < totalRadicals - 1) onNext();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [radicalIndex, totalRadicals]);
 
     // Get category info
     const category = categories.find(c => c.id === radical.category);
@@ -686,8 +783,23 @@ const RadicalDetailModal = ({
 
     return (
         <div className="modal-overlay" onClick={onClose}>
+            {/* Left navigation arrow */}
+            <button
+                className="modal-nav-arrow modal-nav-left"
+                onClick={(e) => { e.stopPropagation(); onPrev(); }}
+                disabled={radicalIndex === 0}
+                title="Previous radical (←)"
+            >
+                ‹
+            </button>
+
             <div className="modal modal-radical-detail" onClick={e => e.stopPropagation()}>
                 <button className="modal-close-btn" onClick={onClose}>✕</button>
+
+                {/* Progress indicator */}
+                <div className="modal-progress-indicator">
+                    {radicalIndex + 1} / {totalRadicals}
+                </div>
 
                 <div className="radical-detail">
                     {/* Header with large character and audio */}
@@ -839,6 +951,16 @@ const RadicalDetailModal = ({
                     </div>
                 </div>
             </div>
+
+            {/* Right navigation arrow */}
+            <button
+                className="modal-nav-arrow modal-nav-right"
+                onClick={(e) => { e.stopPropagation(); onNext(); }}
+                disabled={radicalIndex >= totalRadicals - 1}
+                title="Next radical (→)"
+            >
+                ›
+            </button>
         </div>
     );
 };
@@ -849,6 +971,16 @@ const KanjiDetailModal = ({ kanji, vocabulary, radicals, onClose, onMarkStatus, 
     const [loading, setLoading] = useState(true);
     const [strokeSvg, setStrokeSvg] = useState(null);
     const [animating, setAnimating] = useState(false);
+    const [showAllWords, setShowAllWords] = useState(false);
+
+    // ESC key handler
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     useEffect(() => {
         loadKanjiData();
@@ -1020,15 +1152,29 @@ const KanjiDetailModal = ({ kanji, vocabulary, radicals, onClose, onMarkStatus, 
                         <div className="vocab-words-section">
                             <h4>Words in Your Vocabulary ({kanji.words.length})</h4>
                             <div className="vocab-words-list">
-                                {kanji.words.slice(0, 5).map((word, i) => (
+                                {(showAllWords ? kanji.words : kanji.words.slice(0, 5)).map((word, i) => (
                                     <div key={i} className="vocab-word-item">
                                         <span className="vocab-word japanese">{word.word}</span>
+                                        <button className="btn-audio-xs" onClick={() => playAudio(word.word)}>🔊</button>
                                         <span className="vocab-reading japanese">{word.reading}</span>
                                         <span className="vocab-meaning">{word.meaning}</span>
                                     </div>
                                 ))}
-                                {kanji.words.length > 5 && (
-                                    <p className="more-words">+{kanji.words.length - 5} more words</p>
+                                {kanji.words.length > 5 && !showAllWords && (
+                                    <button
+                                        className="more-words-btn"
+                                        onClick={() => setShowAllWords(true)}
+                                    >
+                                        Show +{kanji.words.length - 5} more words
+                                    </button>
+                                )}
+                                {showAllWords && kanji.words.length > 5 && (
+                                    <button
+                                        className="more-words-btn"
+                                        onClick={() => setShowAllWords(false)}
+                                    >
+                                        Show less
+                                    </button>
                                 )}
                             </div>
                         </div>

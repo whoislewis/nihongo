@@ -88,7 +88,7 @@ const App = () => {
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('library'); }}>Library</button>
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kana'); }}>Kana</button>
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kanji'); }}><span className="japanese">漢字</span></button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('grammar'); }}><span className="japanese">ユニーク</span></button>
+                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('grammar'); }}>Grammar</button>
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('settings'); }}>Settings</button>
                     </nav>
                 </header>
@@ -118,7 +118,7 @@ const App = () => {
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('library'); }}>Library</button>
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kana'); }}>Kana</button>
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kanji'); }}><span className="japanese">漢字</span></button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('grammar'); }}><span className="japanese">ユニーク</span></button>
+                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('grammar'); }}>Grammar</button>
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('settings'); }}>Settings</button>
                     </nav>
                 </header>
@@ -181,7 +181,7 @@ const App = () => {
                         className={`nav-tab ${activeTab === 'grammar' ? 'active' : ''}`}
                         onClick={() => setActiveTab('grammar')}
                     >
-                        <span className="japanese">ユニーク</span>
+                        Grammar
                     </button>
                     <button
                         className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}

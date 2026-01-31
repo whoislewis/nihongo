@@ -3180,10 +3180,96 @@ h3 {
     color: var(--color-primary);
 }
 
-/* Intro Card Stack */
+/* Intro Card Stack with Side Navigation */
+.intro-card-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+}
+
 .intro-card-stack {
     max-width: 700px;
-    margin: 0 auto;
+    flex: 1;
+}
+
+/* Side Navigation Arrows */
+.side-nav-arrow {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border: none;
+    background: var(--color-bg-card);
+    border-radius: 50%;
+    font-size: 2rem;
+    color: var(--color-primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.side-nav-arrow:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.side-nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Modal Navigation Arrows */
+.modal-nav-arrow {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    border: none;
+    background: var(--color-bg-card);
+    border-radius: 50%;
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-fast);
+    z-index: 1001;
+}
+
+.modal-nav-arrow:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: white;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.modal-nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.modal-nav-left {
+    left: var(--space-lg);
+}
+
+.modal-nav-right {
+    right: var(--space-lg);
+}
+
+.modal-progress-indicator {
+    position: absolute;
+    top: var(--space-md);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    background: var(--color-bg-warm);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-full);
 }
 
 .intro-card {
@@ -3340,15 +3426,15 @@ h3 {
     color: var(--color-text-secondary);
 }
 
-/* Combination Examples (Card 3) */
+/* Combination Examples (Card 3) - Fixed Layout */
 .combination-examples {
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-md);
 }
 
 .combination-item {
-    padding: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
     background: var(--color-bg-warm);
     border-radius: 12px;
 }
@@ -3357,38 +3443,146 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: var(--space-sm);
+    gap: var(--space-md);
     margin-bottom: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.combo-part-group, .combo-result-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
 }
 
 .combo-part {
-    font-size: 2rem;
-}
-
-.combo-meaning {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    margin-right: var(--space-sm);
-}
-
-.combo-plus, .combo-equals {
-    font-size: 1.25rem;
-    color: var(--color-text-muted);
+    font-size: 1.75rem;
+    color: var(--color-text);
 }
 
 .combo-result {
-    font-size: 2.5rem;
+    font-size: 2rem;
     color: var(--color-primary);
+}
+
+.combo-label {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.combo-operator {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    font-weight: 300;
 }
 
 .combo-story {
     text-align: center;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--color-text-secondary);
 }
 
-/* Practice Grid (Card 4) */
+/* Practice Grid (Card 4) - Intro version */
+.practice-grid-intro {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+}
+
+.practice-item-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--color-bg-warm);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.practice-kanji-box {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.practice-kanji-box .practice-kanji {
+    font-size: 2.5rem;
+    color: var(--color-text);
+}
+
+.practice-breakdown {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.practice-breakdown .practice-radical {
+    font-size: 1.25rem;
+    color: var(--color-primary);
+}
+
+.practice-breakdown .practice-op {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.practice-item-intro .practice-hint {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* Audio button variations */
+.btn-audio-inline {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 2px;
+    margin-left: var(--space-xs);
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+}
+
+.btn-audio-inline:hover {
+    opacity: 1;
+}
+
+.btn-audio-xs {
+    background: none;
+    border: none;
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 2px;
+    opacity: 0.6;
+    transition: opacity var(--transition-fast);
+}
+
+.btn-audio-xs:hover {
+    opacity: 1;
+}
+
+/* More words button */
+.more-words-btn {
+    background: none;
+    border: 1px dashed var(--color-sand-dark);
+    color: var(--color-primary);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.875rem;
+    width: 100%;
+    transition: all var(--transition-fast);
+}
+
+.more-words-btn:hover {
+    background: var(--color-bg-warm);
+    border-color: var(--color-primary);
+}
+
+/* Practice Grid (Card 4) - Legacy */
 .practice-grid {
     display: flex;
     flex-direction: column;
@@ -4616,5 +4810,319 @@ h3 {
     .intro-stats {
         flex-direction: column;
         gap: var(--space-md);
+    }
+}
+
+/* ===========================================
+   Grammar Introduction Cards
+   =========================================== */
+
+.intro-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.grammar-intro-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    border: 1px solid var(--color-sand);
+    transition: box-shadow var(--transition-normal);
+}
+
+.grammar-intro-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.intro-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 2px solid var(--color-sand);
+}
+
+.intro-card-number {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-terracotta);
+    color: white;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.intro-card-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.intro-card-title-jp {
+    font-family: var(--font-japanese);
+    color: var(--color-terracotta);
+    font-size: 0.875rem;
+}
+
+.intro-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.intro-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.intro-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-top: var(--space-sm);
+}
+
+.intro-text {
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+.intro-example {
+    background: var(--color-bg-warm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-terracotta);
+}
+
+.intro-example-jp {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 1.25rem;
+    margin-bottom: var(--space-xs);
+}
+
+.intro-example-reading {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.intro-example-en {
+    font-size: 0.9375rem;
+    color: var(--color-text);
+}
+
+.intro-example-literal {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin-top: var(--space-xs);
+}
+
+.intro-particle-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    background: var(--color-bg-warm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+}
+
+.intro-particle-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.intro-particle {
+    font-family: var(--font-japanese);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-terracotta);
+    width: 32px;
+    text-align: center;
+}
+
+.intro-particle-desc {
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+}
+
+.intro-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    background: rgba(76, 175, 80, 0.1);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.tip-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.intro-tip span:last-child {
+    font-size: 0.9375rem;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.intro-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    background: rgba(255, 152, 0, 0.1);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.warning-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.intro-warning span:last-child {
+    font-size: 0.9375rem;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.intro-irregulars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    background: var(--color-bg-warm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+}
+
+.irregular-verb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.irregular-verb .arrow {
+    color: var(--color-text-muted);
+}
+
+.irregular-verb .meaning {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.intro-levels {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.level-item {
+    background: var(--color-bg-warm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+}
+
+.level-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xs);
+}
+
+.level-name {
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 140px;
+}
+
+.level-example {
+    font-family: var(--font-japanese);
+    font-size: 1.125rem;
+    color: var(--color-terracotta);
+}
+
+.level-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.intro-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.intro-checklist li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+}
+
+.intro-checklist li::before {
+    content: '☐';
+    color: var(--color-terracotta);
+    font-size: 1.125rem;
+}
+
+.intro-callout {
+    background: linear-gradient(135deg, var(--color-terracotta) 0%, #C75B39 100%);
+    color: white;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+/* Grammar intro responsive */
+@media (max-width: 768px) {
+    .grammar-intro-card {
+        padding: var(--space-md);
+    }
+
+    .intro-card-header {
+        gap: var(--space-sm);
+    }
+
+    .intro-card-number {
+        width: 30px;
+        height: 30px;
+        font-size: 0.875rem;
+    }
+
+    .intro-card-title {
+        font-size: 1.125rem;
+    }
+
+    .intro-example-jp {
+        font-size: 1.125rem;
+    }
+
+    .level-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
+    }
+
+    .level-name {
+        min-width: auto;
     }
 }

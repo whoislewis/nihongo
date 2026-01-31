@@ -3,11 +3,23 @@
 const { useState, useEffect, useMemo } = React;
 
 const Grammar = () => {
-    const [activeCategory, setActiveCategory] = useState('particles');
+    const [activeCategory, setActiveCategory] = useState('intro');
     const [selectedItem, setSelectedItem] = useState(null);
     const [detailType, setDetailType] = useState(null);
     const [grammarProgress, setGrammarProgress] = useState({});
     const [showLearned, setShowLearned] = useState(true);
+
+    // ESC key handler
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && selectedItem) {
+                setSelectedItem(null);
+                setDetailType(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedItem]);
 
     // Load progress from storage on mount
     useEffect(() => {
@@ -89,6 +101,117 @@ const Grammar = () => {
 
     // Grammar data
     const grammarData = {
+        intro: {
+            title: 'Introduction',
+            titleJp: '入門',
+            items: [],
+            cards: [
+                {
+                    id: 1,
+                    title: 'Japanese Sentence Structure',
+                    titleJp: '文の構造',
+                    content: [
+                        { type: 'heading', text: 'SOV Word Order' },
+                        { type: 'text', text: 'Unlike English (Subject-Verb-Object), Japanese follows Subject-Object-Verb order:' },
+                        { type: 'example', jp: '私は りんごを 食べる', reading: 'わたしは りんごを たべる', en: 'I (subject) apple (object) eat (verb)', literal: 'I apple eat' },
+                        { type: 'heading', text: 'Flexible Word Order' },
+                        { type: 'text', text: 'Japanese word order is flexible because particles mark grammatical roles. The verb typically comes last, but other elements can move:' },
+                        { type: 'example', jp: 'りんごを 私は 食べる', reading: 'りんごを わたしは たべる', en: 'The apple, I eat (emphasizes "apple")', literal: 'Apple I eat' }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: 'The Role of Particles',
+                    titleJp: '助詞の役割',
+                    content: [
+                        { type: 'heading', text: 'What Are Particles?' },
+                        { type: 'text', text: 'Particles are small words that attach to nouns/phrases to indicate their grammatical function. They are essential in Japanese.' },
+                        { type: 'heading', text: 'Core Particles' },
+                        { type: 'list', items: [
+                            { particle: 'は', desc: 'Topic marker - "as for..."' },
+                            { particle: 'が', desc: 'Subject marker - identifies WHO/WHAT' },
+                            { particle: 'を', desc: 'Object marker - receives the action' },
+                            { particle: 'に', desc: 'Target/time/location marker' },
+                            { particle: 'で', desc: 'Means/location of action' },
+                            { particle: 'の', desc: 'Possession/connection' }
+                        ]},
+                        { type: 'tip', text: 'Particles are one of the most important aspects of Japanese grammar. Master these first!' }
+                    ]
+                },
+                {
+                    id: 3,
+                    title: 'Verb Types',
+                    titleJp: '動詞の種類',
+                    content: [
+                        { type: 'heading', text: 'Three Verb Categories' },
+                        { type: 'text', text: 'Japanese verbs are classified into three groups based on how they conjugate:' },
+                        { type: 'heading', text: '1. る-verbs (Ichidan / Group 2)' },
+                        { type: 'text', text: 'End in -eru or -iru. Drop る to conjugate.' },
+                        { type: 'example', jp: '食べる → 食べ + ます = 食べます', reading: 'たべる → たべ + ます = たべます', en: 'eat → eat + polite = (I) eat' },
+                        { type: 'heading', text: '2. う-verbs (Godan / Group 1)' },
+                        { type: 'text', text: 'End in various う-sounds. Stem changes when conjugating.' },
+                        { type: 'example', jp: '書く → 書き + ます = 書きます', reading: 'かく → かき + ます = かきます', en: 'write → write + polite = (I) write' },
+                        { type: 'heading', text: '3. Irregular Verbs' },
+                        { type: 'text', text: 'Only two common irregulars:' },
+                        { type: 'irregulars', verbs: [
+                            { dict: 'する', masu: 'します', meaning: 'to do' },
+                            { dict: '来る', masu: '来ます', reading: 'くる / きます', meaning: 'to come' }
+                        ]}
+                    ]
+                },
+                {
+                    id: 4,
+                    title: 'Adjective Types',
+                    titleJp: '形容詞の種類',
+                    content: [
+                        { type: 'heading', text: 'Two Adjective Categories' },
+                        { type: 'text', text: 'Japanese adjectives function differently from English - they conjugate like verbs!' },
+                        { type: 'heading', text: 'い-adjectives' },
+                        { type: 'text', text: 'Native Japanese adjectives ending in い. They conjugate directly.' },
+                        { type: 'example', jp: '高い → 高くない', reading: 'たかい → たかくない', en: 'expensive → not expensive' },
+                        { type: 'heading', text: 'な-adjectives' },
+                        { type: 'text', text: 'Often borrowed words. Use な before nouns, conjugate with だ/です.' },
+                        { type: 'example', jp: '静かだ → 静かじゃない', reading: 'しずかだ → しずかじゃない', en: 'quiet → not quiet' },
+                        { type: 'warning', text: 'Exception: きれい (pretty) and 嫌い (dislike) look like い-adjectives but are actually な-adjectives!' }
+                    ]
+                },
+                {
+                    id: 5,
+                    title: 'Politeness Levels',
+                    titleJp: '丁寧さのレベル',
+                    content: [
+                        { type: 'heading', text: 'Formality in Japanese' },
+                        { type: 'text', text: 'Japanese has distinct formality levels built into the grammar. This affects verb endings, vocabulary choices, and sentence structures.' },
+                        { type: 'heading', text: 'Three Main Levels' },
+                        { type: 'levels', items: [
+                            { level: 'Casual (タメ口)', desc: 'Used with friends, family, or those younger', example: '食べる', reading: 'たべる' },
+                            { level: 'Polite (丁寧語)', desc: 'Standard polite speech, safe default', example: '食べます', reading: 'たべます' },
+                            { level: 'Honorific (敬語)', desc: 'Business/formal situations', example: '召し上がる', reading: 'めしあがる' }
+                        ]},
+                        { type: 'tip', text: 'Start with polite (ます/です) forms. They are appropriate in most situations.' }
+                    ]
+                },
+                {
+                    id: 6,
+                    title: 'Getting Started',
+                    titleJp: '始めよう',
+                    content: [
+                        { type: 'heading', text: 'Recommended Learning Order' },
+                        { type: 'checklist', items: [
+                            'Master hiragana and katakana first',
+                            'Learn basic particles (は, が, を, に, で, の)',
+                            'Study essential vocabulary with this app',
+                            'Understand verb conjugation basics',
+                            'Practice with simple sentence patterns',
+                            'Add counters and expressions gradually'
+                        ]},
+                        { type: 'heading', text: 'Use This Grammar Section' },
+                        { type: 'text', text: 'Navigate the tabs above to explore each grammar topic. Mark items as learned to track your progress.' },
+                        { type: 'callout', text: 'Tip: Click on particles and counters to see detailed examples and practice pronunciation with the audio buttons.' }
+                    ]
+                }
+            ]
+        },
         particles: {
             title: 'Particles',
             titleJp: '助詞',
@@ -470,24 +593,159 @@ const Grammar = () => {
                         <span className="japanese">{currentData.titleJp}</span>
                         <span>{currentData.title}</span>
                     </h2>
-                    <label className="show-learned-toggle">
-                        <input
-                            type="checkbox"
-                            checked={showLearned}
-                            onChange={(e) => setShowLearned(e.target.checked)}
-                        />
-                        <span>Show learned ({categoryStats.learned})</span>
-                    </label>
+                    {activeCategory !== 'intro' && (
+                        <label className="show-learned-toggle">
+                            <input
+                                type="checkbox"
+                                checked={showLearned}
+                                onChange={(e) => setShowLearned(e.target.checked)}
+                            />
+                            <span>Show learned ({categoryStats.learned})</span>
+                        </label>
+                    )}
                 </div>
 
                 {currentData.description && (
                     <p className="grammar-description">{currentData.description}</p>
                 )}
 
-                {/* Category Progress */}
-                <div className="category-progress">
-                    <span>{categoryStats.learned} of {categoryStats.total} learned</span>
-                </div>
+                {/* Category Progress - not shown for intro */}
+                {activeCategory !== 'intro' && (
+                    <div className="category-progress">
+                        <span>{categoryStats.learned} of {categoryStats.total} learned</span>
+                    </div>
+                )}
+
+                {/* Introduction Cards */}
+                {activeCategory === 'intro' && currentData.cards && (
+                    <div className="intro-cards-container">
+                        {currentData.cards.map((card) => (
+                            <div key={card.id} className="grammar-intro-card">
+                                <div className="intro-card-header">
+                                    <span className="intro-card-number">{card.id}</span>
+                                    <div className="intro-card-titles">
+                                        <span className="intro-card-title-jp japanese">{card.titleJp}</span>
+                                        <span className="intro-card-title">{card.title}</span>
+                                    </div>
+                                </div>
+                                <div className="intro-card-content">
+                                    {card.content.map((block, idx) => {
+                                        if (block.type === 'heading') {
+                                            return <h4 key={idx} className="intro-heading">{block.text}</h4>;
+                                        }
+                                        if (block.type === 'text') {
+                                            return <p key={idx} className="intro-text">{block.text}</p>;
+                                        }
+                                        if (block.type === 'example') {
+                                            return (
+                                                <div key={idx} className="intro-example">
+                                                    <div className="intro-example-jp">
+                                                        <span className="japanese">{block.jp}</span>
+                                                        <button
+                                                            className="btn-audio-sm"
+                                                            onClick={() => playAudio(block.jp.replace(/\s/g, ''))}
+                                                        >
+                                                            🔊
+                                                        </button>
+                                                    </div>
+                                                    <div className="intro-example-reading japanese">{block.reading}</div>
+                                                    <div className="intro-example-en">{block.en}</div>
+                                                    {block.literal && <div className="intro-example-literal">Literal: "{block.literal}"</div>}
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'list') {
+                                            return (
+                                                <div key={idx} className="intro-particle-list">
+                                                    {block.items.map((item, i) => (
+                                                        <div key={i} className="intro-particle-item">
+                                                            <span className="intro-particle japanese">{item.particle}</span>
+                                                            <span className="intro-particle-desc">{item.desc}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'tip') {
+                                            return (
+                                                <div key={idx} className="intro-tip">
+                                                    <span className="tip-icon">💡</span>
+                                                    <span>{block.text}</span>
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'warning') {
+                                            return (
+                                                <div key={idx} className="intro-warning">
+                                                    <span className="warning-icon">⚠️</span>
+                                                    <span>{block.text}</span>
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'irregulars') {
+                                            return (
+                                                <div key={idx} className="intro-irregulars">
+                                                    {block.verbs.map((v, i) => (
+                                                        <div key={i} className="irregular-verb">
+                                                            <span className="japanese">{v.dict}</span>
+                                                            <span className="arrow">→</span>
+                                                            <span className="japanese">{v.masu}</span>
+                                                            <span className="meaning">({v.meaning})</span>
+                                                            <button
+                                                                className="btn-audio-xs"
+                                                                onClick={() => playAudio(v.dict)}
+                                                            >
+                                                                🔊
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'levels') {
+                                            return (
+                                                <div key={idx} className="intro-levels">
+                                                    {block.items.map((lvl, i) => (
+                                                        <div key={i} className="level-item">
+                                                            <div className="level-header">
+                                                                <span className="level-name">{lvl.level}</span>
+                                                                <span className="japanese level-example">{lvl.example}</span>
+                                                                <button
+                                                                    className="btn-audio-xs"
+                                                                    onClick={() => playAudio(lvl.example)}
+                                                                >
+                                                                    🔊
+                                                                </button>
+                                                            </div>
+                                                            <div className="level-desc">{lvl.desc}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'checklist') {
+                                            return (
+                                                <ul key={idx} className="intro-checklist">
+                                                    {block.items.map((item, i) => (
+                                                        <li key={i}>{item}</li>
+                                                    ))}
+                                                </ul>
+                                            );
+                                        }
+                                        if (block.type === 'callout') {
+                                            return (
+                                                <div key={idx} className="intro-callout">
+                                                    {block.text}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Particles */}
                 {activeCategory === 'particles' && (
