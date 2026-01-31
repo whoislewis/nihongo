@@ -8,6 +8,8 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
     const [mnemonic, setMnemonic] = useState('');
     const [kanjiData, setKanjiData] = useState([]);
     const [loadingKanji, setLoadingKanji] = useState(false);
+    const [selectedRadical, setSelectedRadical] = useState(null);
+    const [expandedKanji, setExpandedKanji] = useState(null);
 
     // Build session with new words only
     useEffect(() => {
@@ -20,15 +22,20 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
         if (session.length > 0 && currentIndex < session.length) {
             const word = session[currentIndex];
             setMnemonic(Storage.getMnemonic(word.id));
+            setSelectedRadical(null);
+            setExpandedKanji(null);
 
-            // Fetch kanji breakdown data
+            // Fetch enhanced kanji breakdown data with radicals and related vocab
             setLoadingKanji(true);
-            KanjiAPI.getWordKanjiData(word.word).then(data => {
+            const kanjiChars = KanjiAPI.extractKanji(word.word);
+            Promise.all(
+                kanjiChars.map(k => KanjiAPI.getEnhancedKanjiData(k, vocabulary, word.id))
+            ).then(data => {
                 setKanjiData(data);
                 setLoadingKanji(false);
             });
         }
-    }, [currentIndex, session]);
+    }, [currentIndex, session, vocabulary]);
 
     const currentWord = session[currentIndex];
 
@@ -180,7 +187,7 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
                         <div className="meaning-display">{currentWord.meaning}</div>
                     </div>
 
-                    {/* Kanji Breakdown Section - Auto-fetched */}
+                    {/* Kanji Breakdown Section - Enhanced with clickable radicals */}
                     {kanjiData.length > 0 && (
                         <div className="kanji-breakdown-section">
                             <div className="section-label">Kanji Breakdown</div>
@@ -191,38 +198,109 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
                             ) : (
                                 <div className="kanji-details-grid">
                                     {kanjiData.map((k, idx) => (
-                                        <div key={idx} className="kanji-detail-card">
-                                            <div className="kanji-detail-char">{k.character}</div>
-                                            <div className="kanji-detail-info">
-                                                <div className="kanji-meanings">
-                                                    {k.meanings.slice(0, 3).join(', ') || 'N/A'}
+                                        <div key={idx} className={`kanji-detail-card ${expandedKanji === idx ? 'expanded' : ''}`}>
+                                            <div className="kanji-detail-header" onClick={() => setExpandedKanji(expandedKanji === idx ? null : idx)}>
+                                                <div className="kanji-detail-char">{k.character}</div>
+                                                <div className="kanji-detail-info">
+                                                    <div className="kanji-meanings">
+                                                        {k.meanings.slice(0, 3).join(', ') || 'N/A'}
+                                                    </div>
+                                                    {k.readings && (
+                                                        <div className="kanji-readings">
+                                                            {k.readings.kunyomi && <span className="reading-kun">kun: {k.readings.kunyomi}</span>}
+                                                            {k.readings.onyomi && <span className="reading-on">on: {k.readings.onyomi}</span>}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {k.readings && (
-                                                    <div className="kanji-readings">
-                                                        {k.readings.kunyomi && <span>kun: {k.readings.kunyomi}</span>}
-                                                        {k.readings.onyomi && <span>on: {k.readings.onyomi}</span>}
-                                                    </div>
-                                                )}
-                                                {k.radical && (
-                                                    <div className="kanji-radical">
-                                                        Radical: {k.radical} ({k.radicalMeaning})
-                                                    </div>
-                                                )}
-                                                {k.components && k.components.length > 1 && (
-                                                    <div className="kanji-components-list">
-                                                        Parts: {k.components.join(' + ')}
-                                                    </div>
-                                                )}
+                                                <span className="expand-icon">{expandedKanji === idx ? '−' : '+'}</span>
                                             </div>
-                                            {k.mnemonics && k.mnemonics.length > 0 && (
-                                                <div className="kanji-mnemonic">
-                                                    <strong>Memory tip:</strong> {k.mnemonics[0]}
+
+                                            {/* Expanded content */}
+                                            {expandedKanji === idx && (
+                                                <div className="kanji-detail-expanded">
+                                                    {/* Component Breakdown with clickable radicals */}
+                                                    {k.componentDetails && k.componentDetails.length > 0 && (
+                                                        <div className="kanji-components-section">
+                                                            <div className="subsection-label">Components</div>
+                                                            <div className="kanji-component-breakdown">
+                                                                {k.componentDetails.map((comp, compIdx) => (
+                                                                    <React.Fragment key={compIdx}>
+                                                                        {compIdx > 0 && <span className="component-plus">+</span>}
+                                                                        <button
+                                                                            className="component-btn"
+                                                                            onClick={() => setSelectedRadical(comp)}
+                                                                            title={`${comp.char} - ${comp.meaning}`}
+                                                                        >
+                                                                            <span className="component-char japanese">{comp.char}</span>
+                                                                            <span className="component-meaning">{comp.meaning}</span>
+                                                                        </button>
+                                                                    </React.Fragment>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Heisig-style Mnemonic */}
+                                                    {k.mnemonics && k.mnemonics.length > 0 && (
+                                                        <div className="kanji-mnemonic-section">
+                                                            <div className="subsection-label">Memory Story</div>
+                                                            <div className="kanji-mnemonic-text">{k.mnemonics[0]}</div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Stroke Order */}
+                                                    {k.strokes && (
+                                                        <div className="kanji-strokes-section">
+                                                            <div className="subsection-label">Strokes: {k.strokes}</div>
+                                                            <a
+                                                                href={`https://jisho.org/search/${k.character}%20%23kanji`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="stroke-order-link"
+                                                            >
+                                                                View stroke order on Jisho
+                                                            </a>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Related Vocabulary */}
+                                                    {k.relatedVocab && k.relatedVocab.length > 0 && (
+                                                        <div className="kanji-related-section">
+                                                            <div className="subsection-label">Other words with {k.character}</div>
+                                                            <div className="related-vocab-list">
+                                                                {k.relatedVocab.map((word, wordIdx) => (
+                                                                    <div key={wordIdx} className="related-vocab-item">
+                                                                        <span className="related-word japanese">{word.word}</span>
+                                                                        <span className="related-reading">({word.reading})</span>
+                                                                        <span className="related-meaning">{word.meaning}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Radical Detail Modal */}
+                    {selectedRadical && (
+                        <div className="radical-popup-overlay" onClick={() => setSelectedRadical(null)}>
+                            <div className="radical-popup" onClick={e => e.stopPropagation()}>
+                                <button className="radical-popup-close" onClick={() => setSelectedRadical(null)}>×</button>
+                                <div className="radical-popup-char japanese">{selectedRadical.char}</div>
+                                <div className="radical-popup-meaning">{selectedRadical.meaning}</div>
+                                {selectedRadical.mnemonic && (
+                                    <div className="radical-popup-mnemonic">{selectedRadical.mnemonic}</div>
+                                )}
+                                {selectedRadical.category && (
+                                    <div className="radical-popup-category">Category: {selectedRadical.category}</div>
+                                )}
+                            </div>
                         </div>
                     )}
 

@@ -320,6 +320,66 @@ const KanjiAPI = {
             kanjiList.map(k => this.getKanjiData(k))
         );
         return results;
+    },
+
+    // Find other vocabulary words using the same kanji
+    findRelatedVocabulary(kanji, vocabulary, currentWordId, limit = 5) {
+        const related = [];
+        for (const word of vocabulary) {
+            if (word.id === currentWordId) continue;
+            if (word.word && word.word.includes(kanji)) {
+                related.push(word);
+                if (related.length >= limit) break;
+            }
+        }
+        return related;
+    },
+
+    // Get radical details from RADICALS_DATA
+    getRadicalFromData(radicalChar) {
+        if (typeof RADICALS_DATA === 'undefined') return null;
+        return RADICALS_DATA.radicals.find(r => r.char === radicalChar) || null;
+    },
+
+    // Get all radicals that make up a kanji (from our radicals data)
+    getKanjiRadicals(kanji) {
+        if (typeof RADICALS_DATA === 'undefined') return [];
+        const radicals = [];
+        RADICALS_DATA.radicals.forEach(radical => {
+            if (radical.examples && radical.examples.includes(kanji)) {
+                radicals.push(radical);
+            }
+        });
+        return radicals;
+    },
+
+    // Enhanced kanji data with radicals from our database
+    async getEnhancedKanjiData(kanji, vocabulary, currentWordId) {
+        const baseData = await this.getKanjiData(kanji);
+
+        // Get radicals from our RADICALS_DATA
+        const radicals = this.getKanjiRadicals(kanji);
+
+        // Get related vocabulary
+        const relatedVocab = this.findRelatedVocabulary(kanji, vocabulary, currentWordId);
+
+        // Get component radicals with full details
+        const componentDetails = (baseData.components || []).map(comp => {
+            const radicalInfo = this.getRadicalFromData(comp);
+            return {
+                char: comp,
+                meaning: radicalInfo?.meaning || null,
+                category: radicalInfo?.category || null,
+                mnemonic: radicalInfo?.mnemonic || null
+            };
+        }).filter(c => c.meaning); // Only include components we have data for
+
+        return {
+            ...baseData,
+            radicals,
+            componentDetails,
+            relatedVocab
+        };
     }
 };
 

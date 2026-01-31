@@ -7,8 +7,11 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
     const [didYouKnow, setDidYouKnow] = useState(null);
 
     const stackCounts = SRS.getStackCounts(vocabulary, progress);
-    const quizAvailable = stackCounts.learning; // All Learning stack words can be quizzed
+    // Quiz count should match what buildStudySession returns (learning + new words)
+    const quizSession = SRS.buildStudySession(vocabulary, progress, settings);
+    const quizAvailable = quizSession.length;
     const trulyDueCount = SRS.getDueCount(vocabulary, progress); // Words past their review date
+    // Study shows new words available (same logic as StudyMode)
     const newWordsAvailable = SRS.getNewWords(vocabulary, progress, settings).length;
 
     const WORD_GOAL = 1500;

@@ -1429,7 +1429,7 @@ h3 {
     cursor: not-allowed;
 }
 
-/* Kanji Detail Cards */
+/* Kanji Detail Cards - Enhanced with expandable sections */
 .kanji-details-grid {
     display: flex;
     flex-direction: column;
@@ -1438,11 +1438,33 @@ h3 {
 
 .kanji-detail-card {
     display: flex;
+    flex-direction: column;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-sand);
+    overflow: hidden;
+    transition: box-shadow var(--transition-normal);
+}
+
+.kanji-detail-card:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.kanji-detail-card.expanded {
+    box-shadow: var(--shadow-md);
+}
+
+.kanji-detail-header {
+    display: flex;
+    align-items: center;
     gap: var(--space-lg);
     padding: var(--space-md);
-    background: var(--color-bg-card);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-sand);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.kanji-detail-header:hover {
+    background: var(--color-bg-warm);
 }
 
 .kanji-detail-char {
@@ -1450,11 +1472,19 @@ h3 {
     font-size: 2.5rem;
     line-height: 1;
     flex-shrink: 0;
+    color: var(--color-primary);
 }
 
 .kanji-detail-info {
     flex: 1;
     font-size: 0.875rem;
+}
+
+.expand-icon {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    width: 24px;
+    text-align: center;
 }
 
 .kanji-meanings {
@@ -1466,12 +1496,222 @@ h3 {
 .kanji-readings {
     color: var(--color-text-secondary);
     font-size: 0.8125rem;
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
 }
 
-.kanji-readings span {
-    display: block;
+.reading-kun, .reading-on {
+    display: inline-block;
 }
 
+/* Expanded content */
+.kanji-detail-expanded {
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+    border-top: 1px solid var(--color-sand);
+    background: var(--color-bg-warm);
+}
+
+.subsection-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+}
+
+/* Component breakdown with clickable radicals */
+.kanji-components-section {
+    margin-bottom: var(--space-lg);
+}
+
+.kanji-component-breakdown {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.component-plus {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+}
+
+.component-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-card);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.component-btn:hover {
+    background: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.component-btn:hover .component-char,
+.component-btn:hover .component-meaning {
+    color: white;
+}
+
+.component-char {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-primary);
+}
+
+.component-meaning {
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+    text-transform: lowercase;
+}
+
+/* Mnemonic section */
+.kanji-mnemonic-section {
+    margin-bottom: var(--space-lg);
+}
+
+.kanji-mnemonic-text {
+    font-size: 0.9375rem;
+    font-style: italic;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--color-primary);
+}
+
+/* Strokes section */
+.kanji-strokes-section {
+    margin-bottom: var(--space-lg);
+}
+
+.stroke-order-link {
+    font-size: 0.8125rem;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.stroke-order-link:hover {
+    text-decoration: underline;
+}
+
+/* Related vocabulary */
+.kanji-related-section {
+    margin-bottom: 0;
+}
+
+.related-vocab-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.related-vocab-item {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    font-size: 0.875rem;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-sm);
+}
+
+.related-word {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.related-reading {
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+}
+
+.related-meaning {
+    color: var(--color-text-secondary);
+    margin-left: auto;
+}
+
+/* Radical popup modal */
+.radical-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-lg);
+}
+
+.radical-popup {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    box-shadow: var(--shadow-lg);
+}
+
+.radical-popup-close {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+}
+
+.radical-popup-close:hover {
+    background: var(--color-sand);
+    color: var(--color-text);
+}
+
+.radical-popup-char {
+    font-size: 4rem;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+}
+
+.radical-popup-meaning {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-md);
+}
+
+.radical-popup-mnemonic {
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    font-style: italic;
+    margin-bottom: var(--space-md);
+}
+
+.radical-popup-category {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    text-transform: capitalize;
+}
+
+/* Legacy styles for backwards compatibility */
 .kanji-radical {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
