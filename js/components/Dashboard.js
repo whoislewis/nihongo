@@ -19,10 +19,34 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
     const WORD_GOAL = 1500;
     const progressPercent = Math.round((stackCounts.known / WORD_GOAL) * 100);
 
-    // Load stage data
+    // Load stage data - refresh on mount and when progress changes
     useEffect(() => {
-        const summary = StageManager.getDashboardSummary();
-        setStageData(summary);
+        const refreshStageData = () => {
+            const summary = StageManager.getDashboardSummary();
+            setStageData(summary);
+        };
+
+        refreshStageData();
+
+        // Also listen for storage changes (for cross-tab sync)
+        const handleStorageChange = (e) => {
+            if (e.key && e.key.includes('nihongo')) {
+                refreshStageData();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        // Refresh when window gains focus (returning from study)
+        const handleFocus = () => {
+            refreshStageData();
+        };
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, [progress]);
 
     // Daily Japanese facts
@@ -109,49 +133,126 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
                     {showLearningPath && (
                         <>
 
-                    {/* Stage Progress Indicators */}
-                    <div className="stage-progress-row">
-                        {stageData.allStages.map((stage, index) => (
-                            <div
-                                key={stage.id}
-                                className={`stage-indicator ${stage.complete ? 'complete' : ''} ${stage.status === 'active' ? 'active' : ''} ${stage.status === 'locked' ? 'locked' : ''}`}
-                                title={`${stage.name}: ${stage.progress.percent}%`}
-                            >
-                                <div className="stage-indicator-icon">
-                                    {stage.complete ? '✅' : stage.status === 'locked' ? '🔒' : stage.icon}
-                                </div>
-                                <div className="stage-indicator-name">{stage.name}</div>
-                                {stage.status === 'active' && !stage.complete && (
-                                    <div className="stage-indicator-progress">
-                                        <div className="mini-progress-bar">
+                    {/* Detailed Learning Path with Sub-milestones */}
+                    <div className="detailed-learning-path">
+                        {stageData.allStages.map((stage, index) => {
+                            const isLocked = stage.status === 'locked';
+                            const kanaMastery = Storage.getKanaMastery();
+
+                            return (
+                                <div
+                                    key={stage.id}
+                                    className={`learning-stage-card ${stage.complete ? 'complete' : ''} ${stage.status === 'active' ? 'active' : ''} ${isLocked ? 'soft-locked' : ''}`}
+                                >
+                                    <div className="stage-header">
+                                        <span className="stage-icon">{stage.complete ? '✅' : stage.icon}</span>
+                                        <span className="stage-name">{stage.name}</span>
+                                        {stage.complete && <span className="stage-complete-badge">Complete</span>}
+                                    </div>
+
+                                    {/* Sub-milestones based on stage type */}
+                                    {stage.id === 'kana_mastery' && (
+                                        <div className="stage-submilestones">
+                                            <div className={`submilestone ${kanaMastery.hiraganaComplete ? 'complete' : ''}`}>
+                                                <span className="submilestone-icon">あ</span>
+                                                <span className="submilestone-name">Hiragana</span>
+                                                <span className="submilestone-progress">{kanaMastery.hiraganaCount}/46</span>
+                                            </div>
+                                            <div className={`submilestone ${kanaMastery.katakanaComplete ? 'complete' : ''}`}>
+                                                <span className="submilestone-icon">ア</span>
+                                                <span className="submilestone-name">Katakana</span>
+                                                <span className="submilestone-progress">{kanaMastery.katakanaCount}/46</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {stage.id === 'heisig_kanji' && (
+                                        <div className="stage-submilestones">
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Primitives</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/20</span>
+                                            </div>
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Lessons 1-3</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/50</span>
+                                            </div>
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Lessons 4-10</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/200</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {stage.id === 'vocabulary_building' && (
+                                        <div className="stage-submilestones">
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Basic Words</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : stackCounts.known}/100</span>
+                                            </div>
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Intermediate</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/500</span>
+                                            </div>
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Advanced</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/1500</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {stage.id === 'grammar_mastery' && (
+                                        <div className="stage-submilestones">
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Particles</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/10</span>
+                                            </div>
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Verb Forms</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/15</span>
+                                            </div>
+                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
+                                                <span className="submilestone-name">Sentence Patterns</span>
+                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/25</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Soft lock message */}
+                                    {isLocked && (
+                                        <div className="soft-lock-message">
+                                            Complete Kana Mastery to unlock
+                                        </div>
+                                    )}
+
+                                    {/* Progress bar for active stage */}
+                                    {stage.status === 'active' && !stage.complete && (
+                                        <div className="stage-progress-bar">
                                             <div
-                                                className="mini-progress-fill"
+                                                className="stage-progress-fill"
                                                 style={{ width: `${stage.progress.percent}%` }}
                                             />
                                         </div>
-                                        <span className="mini-progress-text">{stage.progress.percent}%</span>
-                                    </div>
-                                )}
-                                {index < stageData.allStages.length - 1 && (
-                                    <div className={`stage-connector-line ${stage.complete ? 'complete' : ''}`} />
-                                )}
-                            </div>
-                        ))}
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
 
-                    {/* Current Stage Info */}
-                    {stageData.currentStage && (
-                        <div className="current-stage-info">
-                            <div className="current-stage-label">Currently working on:</div>
-                            <div className="current-stage-name">
-                                <span className="current-stage-icon">{stageData.currentStage.icon}</span>
-                                {stageData.currentStage.name}
+                    {/* Next Milestone */}
+                    {stageData.nextMilestone && (
+                        <div className="next-milestone-box" style={{
+                            marginTop: 'var(--space-lg)',
+                            padding: 'var(--space-md)',
+                            background: 'var(--color-bg-warm)',
+                            borderRadius: 'var(--radius-md)',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                                Next goal:
                             </div>
-                            {stageData.nextMilestone && (
-                                <div className="next-milestone-text">
-                                    Next: {stageData.nextMilestone.text}
-                                </div>
-                            )}
+                            <div style={{ fontWeight: '500' }}>
+                                {stageData.nextMilestone.text}
+                            </div>
                         </div>
                     )}
                         </>

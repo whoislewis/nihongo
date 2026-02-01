@@ -321,10 +321,44 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                         Vocabulary, grammar, and kanji will unlock after kana mastery.
                     </p>
                 </div>
-                <div className="study-actions-bottom">
+                <div className="study-actions-bottom" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', alignItems: 'center' }}>
                     <button className="btn btn-primary btn-large" onClick={() => setShowKanaQuiz(true)}>
                         Start Kana Quiz
                     </button>
+                    {/* Quick toggle for testing - reversible */}
+                    {kanaMastery.totalComplete ? (
+                        <button
+                            className="btn btn-ghost"
+                            style={{
+                                fontSize: '0.75rem',
+                                padding: '6px 12px',
+                                border: '1px solid var(--color-sand)',
+                                color: 'var(--color-text-muted)'
+                            }}
+                            onClick={() => {
+                                Storage.resetKanaProgress();
+                                refreshKanaMastery();
+                            }}
+                        >
+                            Forget All Kana
+                        </button>
+                    ) : (
+                        <button
+                            className="btn btn-ghost"
+                            style={{
+                                fontSize: '0.75rem',
+                                padding: '6px 12px',
+                                border: '1px solid var(--color-sand)',
+                                color: 'var(--color-text-muted)'
+                            }}
+                            onClick={() => {
+                                Storage.masterAllKana(hiraganaChars, katakanaChars);
+                                refreshKanaMastery();
+                            }}
+                        >
+                            Mark All Kana as Known
+                        </button>
+                    )}
                 </div>
             </div>
         );

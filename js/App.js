@@ -8,6 +8,7 @@ const App = () => {
     const [progress, setProgress] = useState({});
     const [settings, setSettings] = useState(DEFAULT_SETTINGS);
     const [stats, setStats] = useState({});
+    const [refreshKey, setRefreshKey] = useState(0); // Forces Dashboard remount
 
     // Load vocabulary from global
     const vocabulary = typeof VOCABULARY_DATA !== 'undefined' ? VOCABULARY_DATA : [];
@@ -28,11 +29,12 @@ const App = () => {
         setStats(Storage.getStats());
     }, []);
 
-    // Exit session handler
+    // Exit session handler - increment refreshKey to force Dashboard remount
     const handleExitSession = useCallback(() => {
         setStudyMode(null);
         setProgress(Storage.getWordProgress());
         setStats(Storage.getStats());
+        setRefreshKey(prev => prev + 1); // Force Dashboard to refresh
     }, []);
 
     // ESC key to exit study/quiz mode
@@ -221,6 +223,7 @@ const App = () => {
             <main>
                 {activeTab === 'dashboard' && (
                     <Dashboard
+                        key={refreshKey}
                         vocabulary={vocabulary}
                         progress={progress}
                         settings={settings}

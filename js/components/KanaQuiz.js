@@ -111,10 +111,10 @@ const KanaQuiz = ({ onComplete, onExit }) => {
             Storage.masterKana(currentQuestion.kana, quizType);
             setSessionMastered(prev => [...prev, currentQuestion.kana]);
 
-            // Auto-advance after 0.6 seconds for correct answers
+            // Auto-advance after 0.5 seconds for correct answers
             autoAdvanceRef.current = setTimeout(() => {
                 handleNext();
-            }, 600);
+            }, 500);
         } else {
             setSessionWrong(prev => [...prev, {
                 kana: currentQuestion.kana,
