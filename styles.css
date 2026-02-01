@@ -5126,3 +5126,1705 @@ h3 {
         min-width: auto;
     }
 }
+
+/* ===========================================
+   Learning Path & Stage System
+   =========================================== */
+
+/* Learning Path Component */
+.learning-path {
+    padding: var(--space-lg);
+}
+
+.learning-path-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.learning-path-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.next-milestone {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+}
+
+.milestone-label {
+    color: var(--color-text-muted);
+}
+
+.milestone-text {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+/* Learning Path Tree */
+.learning-path-tree {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.stage-node {
+    position: relative;
+}
+
+.stage-connector {
+    position: absolute;
+    left: 24px;
+    top: -16px;
+    width: 2px;
+    height: 16px;
+    background: var(--color-sand);
+}
+
+.stage-connector.complete {
+    background: var(--color-success);
+}
+
+.stage-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-card);
+    border: 2px solid var(--color-sand);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: all var(--transition-normal);
+}
+
+.stage-node.stage-active .stage-card {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(26, 127, 100, 0.1);
+}
+
+.stage-node.stage-complete .stage-card {
+    border-color: var(--color-success);
+    background: var(--color-success-light);
+}
+
+.stage-node.stage-locked .stage-card {
+    opacity: 0.5;
+}
+
+.stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+
+.stage-icon {
+    font-size: 1.5rem;
+}
+
+.stage-status-icon {
+    font-size: 1rem;
+}
+
+.stage-content {
+    flex: 1;
+}
+
+.stage-name {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+}
+
+.stage-description {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.stage-progress-bar {
+    height: 6px;
+    background: var(--color-sand);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: var(--space-sm);
+}
+
+.stage-progress-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 3px;
+    transition: width var(--transition-normal);
+}
+
+.stage-progress-text {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.stage-details {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-sand);
+}
+
+.stage-detail-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    padding: var(--space-xs) 0;
+}
+
+.stage-detail-item.complete {
+    color: var(--color-success);
+}
+
+.stage-detail-item.muted {
+    color: var(--color-text-muted);
+}
+
+.detail-progress {
+    color: var(--color-text-muted);
+    margin-left: auto;
+}
+
+/* Learning Path Action */
+.learning-path-action {
+    text-align: center;
+}
+
+.start-study-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-md);
+    font-size: 1.125rem;
+    padding: var(--space-lg) var(--space-2xl);
+}
+
+.btn-icon {
+    font-size: 1.5rem;
+}
+
+.action-hint {
+    margin-top: var(--space-md);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+/* Compact Learning Path */
+.learning-path-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+}
+
+.compact-stages {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.compact-stage {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    opacity: 0.5;
+}
+
+.compact-stage.complete,
+.compact-stage.active {
+    opacity: 1;
+}
+
+.compact-icon {
+    font-size: 1.25rem;
+}
+
+.compact-connector {
+    color: var(--color-sand);
+}
+
+.compact-connector.complete {
+    color: var(--color-success);
+}
+
+/* ===========================================
+   Resource Dropdown
+   =========================================== */
+
+.resource-dropdown {
+    position: relative;
+}
+
+.resource-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.dropdown-arrow {
+    font-size: 0.625rem;
+    transition: transform var(--transition-fast);
+}
+
+.dropdown-arrow.open {
+    transform: rotate(180deg);
+}
+
+.resource-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 260px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-sand);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.resource-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.resource-dropdown-item:hover {
+    background: var(--color-bg-warm);
+}
+
+.resource-dropdown-item.active {
+    background: var(--color-success-light);
+}
+
+.resource-icon {
+    font-size: 1.25rem;
+    width: 32px;
+    text-align: center;
+}
+
+.resource-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.resource-label {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.resource-description {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.resource-active-indicator {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+/* ===========================================
+   Dashboard Stage Progress
+   =========================================== */
+
+.dashboard-learning-path {
+    margin-bottom: var(--space-lg);
+}
+
+.stage-progress-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    overflow-x: auto;
+    padding-bottom: var(--space-sm);
+}
+
+.stage-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    min-width: 100px;
+    text-align: center;
+    position: relative;
+    flex: 1;
+}
+
+.stage-indicator.locked {
+    opacity: 0.4;
+}
+
+.stage-indicator.complete .stage-indicator-icon {
+    color: var(--color-success);
+}
+
+.stage-indicator.active .stage-indicator-icon {
+    color: var(--color-primary);
+}
+
+.stage-indicator-icon {
+    font-size: 1.5rem;
+}
+
+.stage-indicator-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.stage-indicator-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+}
+
+.mini-progress-bar {
+    width: 60px;
+    height: 4px;
+    background: var(--color-sand);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.mini-progress-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 2px;
+}
+
+.mini-progress-text {
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+}
+
+.stage-connector-line {
+    position: absolute;
+    right: -50%;
+    top: 12px;
+    width: 100%;
+    height: 2px;
+    background: var(--color-sand);
+    z-index: -1;
+}
+
+.stage-connector-line.complete {
+    background: var(--color-success);
+}
+
+.current-stage-info {
+    text-align: center;
+    padding: var(--space-md);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+}
+
+.current-stage-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.current-stage-name {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+.current-stage-icon {
+    font-size: 1.25rem;
+}
+
+.next-milestone-text {
+    font-size: 0.8125rem;
+    color: var(--color-primary);
+    margin-top: var(--space-xs);
+}
+
+/* ===========================================
+   Progress Page
+   =========================================== */
+
+.progress-page {
+    padding: var(--space-lg);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.progress-tabs {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+    background: var(--color-bg-warm);
+    padding: 6px;
+    border-radius: var(--radius-full);
+}
+
+.progress-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-full);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--color-text-secondary);
+}
+
+.progress-tab:hover {
+    background: var(--color-sand);
+}
+
+.progress-tab.active {
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
+}
+
+.progress-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+/* Progress Learning Path */
+.progress-learning-path h3,
+.progress-vocab-stats h3,
+.progress-radical-stats h3,
+.progress-study-stats h3,
+.progress-achievements h3 {
+    font-size: 1.125rem;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm);
+    border-bottom: 2px solid var(--color-sand);
+}
+
+.progress-stages {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.progress-stage {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-sand);
+}
+
+.progress-stage.complete {
+    border-color: var(--color-success);
+    background: var(--color-success-light);
+}
+
+.progress-stage.active {
+    border-color: var(--color-primary);
+}
+
+.progress-stage-icon {
+    font-size: 1.5rem;
+}
+
+.progress-stage-info {
+    flex: 1;
+}
+
+.progress-stage-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.progress-stage-progress {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.progress-stage-bar {
+    width: 100px;
+    height: 6px;
+    background: var(--color-sand);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-stage-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 3px;
+}
+
+/* Vocab Stats */
+.vocab-stats-grid,
+.radical-stats-grid,
+.study-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.vocab-stat-card,
+.radical-stat-card,
+.study-stat-card {
+    text-align: center;
+    padding: var(--space-lg);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-sand);
+}
+
+.vocab-stat-value,
+.radical-stat-value,
+.study-stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.vocab-stat-label,
+.radical-stat-label,
+.study-stat-label {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.study-stat-icon {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-sm);
+}
+
+/* Progress Bars */
+.vocab-progress-section,
+.radical-progress-section {
+    background: var(--color-bg-card);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-sand);
+}
+
+.vocab-progress-header,
+.radical-progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+    font-size: 0.875rem;
+}
+
+.vocab-progress-bar,
+.radical-progress-bar {
+    height: 12px;
+    background: var(--color-sand);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.vocab-progress-fill,
+.radical-progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width var(--transition-normal);
+}
+
+.vocab-progress-fill.known {
+    background: var(--color-success);
+    position: absolute;
+}
+
+.vocab-progress-fill.learning {
+    background: var(--color-ochre);
+    position: absolute;
+}
+
+.vocab-progress-legend {
+    display: flex;
+    gap: var(--space-lg);
+    margin-top: var(--space-sm);
+    font-size: 0.75rem;
+}
+
+.legend-item.known {
+    color: var(--color-success);
+}
+
+.legend-item.learning {
+    color: var(--color-ochre);
+}
+
+/* Achievements */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-md);
+}
+
+.achievement-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-lg);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-sand);
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.achievement-card.earned {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, rgba(26, 127, 100, 0.05) 0%, rgba(26, 127, 100, 0.1) 100%);
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+}
+
+.achievement-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.achievement-lock {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    font-size: 0.75rem;
+}
+
+/* ===========================================
+   Smart Study Session
+   =========================================== */
+
+.card-type-badge {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-md);
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-full);
+    margin-bottom: var(--space-lg);
+}
+
+.card-type-badge.grammar {
+    background: var(--color-ochre);
+}
+
+.dependency-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: #FEF3C7;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    margin-top: var(--space-md);
+}
+
+.warning-icon {
+    font-size: 1rem;
+}
+
+.missing-radicals {
+    color: var(--color-ochre);
+    font-weight: 600;
+}
+
+/* Radical Card */
+.radical-card-content {
+    text-align: center;
+}
+
+.radical-main-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.radical-char-large {
+    font-size: 5rem;
+    line-height: 1;
+}
+
+.radical-meaning-large {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-sm);
+}
+
+.radical-name {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+}
+
+.radical-mnemonic-section,
+.radical-examples-section {
+    text-align: left;
+    margin-bottom: var(--space-lg);
+}
+
+.radical-mnemonic-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    padding: var(--space-md);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+}
+
+.radical-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.radical-example-kanji {
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-sm);
+    font-size: 1.5rem;
+}
+
+.radical-category {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-md);
+}
+
+/* Intro Card */
+.intro-card-content {
+    text-align: center;
+}
+
+.intro-card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: var(--space-lg);
+}
+
+.intro-card-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-lg);
+}
+
+.intro-card-example {
+    padding: var(--space-lg);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+}
+
+.example-japanese {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-sm);
+}
+
+.example-meaning {
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+}
+
+/* Grammar Context Card */
+.grammar-contextual {
+    border-left: 4px solid var(--color-ochre);
+}
+
+.grammar-card-content {
+    text-align: center;
+}
+
+.grammar-title {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-md);
+}
+
+.grammar-context {
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-lg);
+}
+
+.context-word {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.grammar-pattern-display {
+    padding: var(--space-md);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+    display: inline-block;
+}
+
+.pattern-name {
+    font-family: var(--font-japanese);
+    font-size: 1.25rem;
+    color: var(--color-primary);
+}
+
+/* ===========================================
+   Radical Library
+   =========================================== */
+
+.radical-library {
+    padding: var(--space-lg);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.radical-library-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.radical-library-header h2 {
+    margin-bottom: var(--space-sm);
+}
+
+.radical-library-subtitle {
+    color: var(--color-text-secondary);
+}
+
+.radical-library-filters {
+    margin-bottom: var(--space-xl);
+}
+
+.radical-search {
+    width: 100%;
+    padding: var(--space-md);
+    border: 2px solid var(--color-sand);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    margin-bottom: var(--space-md);
+    transition: border-color var(--transition-fast);
+}
+
+.radical-search:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.radical-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--space-md);
+}
+
+.radical-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--color-bg-card);
+    border: 2px solid var(--color-sand);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.radical-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.radical-card.priority {
+    border-color: var(--color-primary-light);
+}
+
+.radical-card.learning {
+    border-color: var(--color-ochre);
+    background: rgba(249, 115, 22, 0.05);
+}
+
+.radical-card.known {
+    border-color: var(--color-success);
+    background: var(--color-success-light);
+}
+
+.radical-card-char {
+    font-size: 2rem;
+    margin-bottom: var(--space-xs);
+}
+
+.radical-card-meaning {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: var(--space-xs);
+}
+
+.radical-card-strokes {
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+}
+
+.priority-badge {
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: rgba(26, 127, 100, 0.1);
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+}
+
+.status-badge {
+    position: absolute;
+    top: var(--space-xs);
+    left: var(--space-xs);
+    font-size: 0.75rem;
+}
+
+.session-stats {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stage-progress-row {
+        flex-wrap: wrap;
+    }
+
+    .stage-indicator {
+        min-width: 80px;
+    }
+
+    .resource-dropdown-menu {
+        right: auto;
+        left: 0;
+    }
+
+    .achievements-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .vocab-stats-grid,
+    .radical-stats-grid,
+    .study-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .stage-connector-line {
+        display: none;
+    }
+
+    .achievements-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ================================================
+   HEISIG KANJI STUDY STYLES
+   ================================================ */
+
+.heisig-study-section {
+    padding: var(--space-lg) 0;
+}
+
+.heisig-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--color-sand);
+}
+
+.heisig-title h2 {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-xs);
+}
+
+.heisig-subtitle {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.heisig-stats {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.heisig-stats .stat-item {
+    text-align: center;
+}
+
+.heisig-stats .stat-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    display: block;
+}
+
+.heisig-stats .stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Heisig tabs */
+.heisig-tabs {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--color-sand);
+    padding-bottom: var(--space-md);
+}
+
+.heisig-tab {
+    padding: var(--space-sm) var(--space-lg);
+    background: none;
+    border: none;
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.heisig-tab:hover {
+    background: var(--color-sand);
+    color: var(--color-text);
+}
+
+.heisig-tab.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Heisig study card */
+.heisig-study-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-md);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.heisig-progress-bar {
+    margin-bottom: var(--space-xl);
+}
+
+.heisig-progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+/* Kanji display */
+.heisig-kanji-display {
+    text-align: center;
+    padding: var(--space-xl) 0;
+    position: relative;
+}
+
+.heisig-kanji-large {
+    font-size: 8rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.heisig-kanji-large:hover {
+    transform: scale(1.05);
+}
+
+.learned-indicator {
+    position: absolute;
+    top: 0;
+    right: var(--space-xl);
+    background: var(--color-success-light);
+    color: var(--color-success);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Keyword */
+.heisig-keyword {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.heisig-keyword h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--color-text);
+}
+
+.heisig-frame-number {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    margin-top: var(--space-xs);
+}
+
+/* Reveal button */
+.heisig-reveal-btn {
+    width: 100%;
+    padding: var(--space-lg);
+    font-size: 1rem;
+}
+
+/* Answer section */
+.heisig-answer-section {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Components breakdown */
+.heisig-components {
+    background: var(--color-bg-warm);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+}
+
+.heisig-components h4 {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
+}
+
+.components-breakdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.breakdown-kanji {
+    font-size: 2.5rem;
+}
+
+.breakdown-equals {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+}
+
+.breakdown-parts {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+}
+
+.breakdown-part {
+    background: white;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-sand);
+}
+
+/* Heisig story */
+.heisig-story {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, var(--color-success-light), white);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--color-primary);
+}
+
+.heisig-story h4 {
+    font-size: 0.875rem;
+    color: var(--color-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.heisig-story p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+}
+
+/* Primitive info */
+.heisig-primitive {
+    background: #FFF9E6;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+    border: 1px solid #F59E0B30;
+}
+
+.heisig-primitive h4 {
+    font-size: 0.75rem;
+    color: var(--color-ochre);
+    margin-bottom: var(--space-xs);
+}
+
+.heisig-primitive p {
+    font-size: 0.9375rem;
+}
+
+/* Personal mnemonic */
+.heisig-personal-mnemonic {
+    margin-bottom: var(--space-lg);
+}
+
+.heisig-personal-mnemonic h4 {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+}
+
+.mnemonic-display {
+    background: var(--color-bg);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-sand-dark);
+    cursor: pointer;
+    min-height: 60px;
+    transition: all var(--transition-fast);
+}
+
+.mnemonic-display:hover {
+    border-color: var(--color-primary);
+    background: var(--color-bg-warm);
+}
+
+.mnemonic-placeholder {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.mnemonic-edit textarea {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    resize: vertical;
+    background: white;
+}
+
+.mnemonic-actions {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
+
+/* Stroke info */
+.heisig-strokes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-xl);
+}
+
+.stroke-count {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.stroke-order-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Actions */
+.heisig-actions {
+    margin-bottom: var(--space-lg);
+}
+
+.heisig-actions .btn {
+    width: 100%;
+    padding: var(--space-lg);
+    font-size: 1rem;
+}
+
+/* Navigation */
+.heisig-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-md);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-sand);
+}
+
+.heisig-frame-input {
+    width: 80px;
+    text-align: center;
+    padding: var(--space-sm);
+    border: 1px solid var(--color-sand-dark);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+}
+
+/* List view */
+.heisig-list-view {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.heisig-lesson-section {
+    margin-bottom: var(--space-xl);
+}
+
+.heisig-lesson-section h3 {
+    margin-bottom: var(--space-md);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.heisig-kanji-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--space-sm);
+}
+
+.heisig-grid-item {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-sand);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.heisig-grid-item:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.heisig-grid-item.learned {
+    background: var(--color-success-light);
+    border-color: var(--color-success);
+}
+
+.grid-kanji {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: var(--space-xs);
+}
+
+.grid-keyword {
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grid-frame {
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+}
+
+.grid-check {
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    color: var(--color-success);
+    font-size: 0.75rem;
+}
+
+/* Learning path note */
+.heisig-learning-path-note {
+    margin-top: var(--space-2xl);
+    padding: var(--space-lg);
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-lg);
+}
+
+.path-note-content h4 {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
+}
+
+.path-stages {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.path-stage {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background: white;
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    border: 1px solid var(--color-sand);
+}
+
+.path-stage.completed {
+    background: var(--color-success-light);
+    border-color: var(--color-success);
+    color: var(--color-success);
+}
+
+.path-stage.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.path-arrow {
+    color: var(--color-text-muted);
+}
+
+.heisig-empty {
+    text-align: center;
+    padding: var(--space-2xl);
+    color: var(--color-text-muted);
+}
+
+/* Heisig example in radical cards */
+.heisig-example-card {
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-sm);
+}
+
+.heisig-example-card .example-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.heisig-example-card .example-kanji {
+    font-size: 1.5rem;
+}
+
+.heisig-example-card .example-keyword {
+    font-weight: 500;
+}
+
+.heisig-example-card .example-breakdown {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.heisig-example-card .breakdown-label {
+    font-weight: 500;
+    margin-right: var(--space-xs);
+}
+
+.heisig-example-card .example-story {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .heisig-header {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .heisig-kanji-large {
+        font-size: 6rem;
+    }
+
+    .heisig-kanji-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+
+    .path-stages {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .path-arrow {
+        display: none;
+    }
+}
+
+/* ================================================
+   RADICAL DETAILED EXAMPLE CARDS
+   Required format: word (reading) - meaning
+   Breakdown: kanji = components
+   Story: "..."
+   ================================================ */
+
+.examples-detailed-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.example-detailed-card {
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    border-left: 3px solid var(--color-primary);
+}
+
+.example-detailed-card.featured {
+    background: linear-gradient(135deg, var(--color-success-light), white);
+    border-left: 4px solid var(--color-success);
+}
+
+.example-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.example-kanji-large {
+    font-size: 2rem;
+    color: var(--color-text);
+}
+
+.example-keyword {
+    font-weight: 600;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+}
+
+.example-vocab-line {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    background: white;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-sm);
+    font-size: 0.9375rem;
+}
+
+.example-vocab-line .reading {
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+}
+
+.example-vocab-line .meaning {
+    color: var(--color-text-secondary);
+}
+
+.example-breakdown-line {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) 0;
+    font-size: 0.875rem;
+    flex-wrap: wrap;
+}
+
+.example-breakdown-line .breakdown-label {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.example-breakdown-line .breakdown-formula {
+    font-size: 1.25rem;
+}
+
+.example-breakdown-line .breakdown-equals {
+    color: var(--color-text-muted);
+    margin: 0 var(--space-xs);
+}
+
+.example-breakdown-line .breakdown-components {
+    background: white;
+    padding: 2px var(--space-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-sand);
+    color: var(--color-text-secondary);
+}
+
+.example-story-line {
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px dashed var(--color-sand);
+    font-size: 0.8125rem;
+}
+
+.example-story-line .story-label {
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-right: var(--space-xs);
+}
+
+.example-story-line .story-text {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.more-examples {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-sand);
+}

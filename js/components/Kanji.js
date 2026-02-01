@@ -888,40 +888,109 @@ const RadicalDetailModal = ({
                         </div>
                     )}
 
-                    {/* Kanji Examples with Audio */}
+                    {/* Kanji Examples with Heisig-style breakdown */}
                     {radical.examples && radical.examples.length > 0 && (
                         <div className="radical-examples-section">
-                            <h4>Kanji using this radical ({radical.examples.length})</h4>
-                            <div className="examples-grid-enhanced">
-                                {radical.examples.slice(0, 10).map((ex, i) => {
-                                    const kanjiInVocab = extractedKanji.find(k => k.kanji === ex);
-                                    return (
-                                        <div
-                                            key={i}
-                                            className={`example-kanji-item ${kanjiInVocab ? 'in-vocab' : ''}`}
-                                            onClick={() => {
-                                                if (kanjiInVocab) {
-                                                    onSelectKanji(kanjiInVocab);
-                                                }
-                                            }}
-                                        >
-                                            <span className="example-kanji-char japanese">{ex}</span>
+                            <h4>Kanji using this radical</h4>
+                            <div className="examples-detailed-list">
+                                {/* First show detailedExamples if available */}
+                                {radical.detailedExamples && radical.detailedExamples.map((detail, i) => (
+                                    <div key={`detail-${i}`} className="example-detailed-card featured">
+                                        <div className="example-header">
+                                            <span className="example-kanji-large japanese">{detail.kanji}</span>
                                             <button
                                                 className="btn-audio-sm"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    playAudio(ex);
+                                                    playAudio(detail.word);
                                                 }}
                                             >
                                                 🔊
                                             </button>
-                                            {kanjiInVocab && <span className="in-vocab-badge">In vocab</span>}
                                         </div>
-                                    );
-                                })}
+
+                                        {/* Word with reading and meaning - REQUIRED FORMAT */}
+                                        <div className="example-vocab-line">
+                                            <span className="japanese">{detail.word}</span>
+                                            <span className="reading japanese">({detail.reading})</span>
+                                            <span className="meaning">- {detail.meaning}</span>
+                                        </div>
+
+                                        {/* Breakdown - REQUIRED FORMAT */}
+                                        <div className="example-breakdown-line">
+                                            <span className="breakdown-label">Breakdown:</span>
+                                            <span className="breakdown-components">{detail.breakdown}</span>
+                                        </div>
+
+                                        {/* Story - REQUIRED FORMAT */}
+                                        <div className="example-story-line">
+                                            <span className="story-label">Story:</span>
+                                            <span className="story-text">"{detail.story}"</span>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Then show remaining examples without detailed info */}
+                                {radical.examples
+                                    .filter(ex => !radical.detailedExamples?.some(d => d.kanji === ex))
+                                    .slice(0, Math.max(0, 5 - (radical.detailedExamples?.length || 0)))
+                                    .map((ex, i) => {
+                                        const heisigData = typeof HEISIG_DATA !== 'undefined' ? HEISIG_DATA.getByKanji(ex) : null;
+                                        const vocabWord = vocabulary.find(w => w.word.includes(ex));
+
+                                        return (
+                                            <div key={`ex-${i}`} className="example-detailed-card">
+                                                <div className="example-header">
+                                                    <span className="example-kanji-large japanese">{ex}</span>
+                                                    <button
+                                                        className="btn-audio-sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            playAudio(vocabWord?.word || ex);
+                                                        }}
+                                                    >
+                                                        🔊
+                                                    </button>
+                                                    {heisigData && (
+                                                        <span className="example-keyword">- {heisigData.keyword}</span>
+                                                    )}
+                                                </div>
+
+                                                {vocabWord && (
+                                                    <div className="example-vocab-line">
+                                                        <span className="japanese">{vocabWord.word}</span>
+                                                        <span className="reading japanese">({vocabWord.reading})</span>
+                                                        <span className="meaning">- {vocabWord.meaning}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="example-breakdown-line">
+                                                    <span className="breakdown-label">Breakdown:</span>
+                                                    <span className="breakdown-formula japanese">{ex}</span>
+                                                    <span className="breakdown-equals">=</span>
+                                                    {heisigData && heisigData.components.length > 0 ? (
+                                                        <span className="breakdown-components">
+                                                            {heisigData.components.join(' + ')}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="breakdown-components">
+                                                            {radical.char} ({radical.meaning}) + ...
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {heisigData && (
+                                                    <div className="example-story-line">
+                                                        <span className="story-label">Story:</span>
+                                                        <span className="story-text">"{heisigData.story.slice(0, 80)}..."</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                             </div>
-                            {radical.examples.length > 10 && (
-                                <p className="more-examples">+{radical.examples.length - 10} more kanji</p>
+                            {radical.examples.length > 5 && (
+                                <p className="more-examples">+{radical.examples.length - 5} more kanji using this radical</p>
                             )}
                         </div>
                     )}

@@ -4,7 +4,7 @@ const { useState, useEffect, useCallback } = React;
 
 const App = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [studyMode, setStudyMode] = useState(null); // null, 'study', or 'quiz'
+    const [studyMode, setStudyMode] = useState(null); // null, 'study', 'quiz', 'smart'
     const [progress, setProgress] = useState({});
     const [settings, setSettings] = useState(DEFAULT_SETTINGS);
     const [stats, setStats] = useState({});
@@ -12,8 +12,11 @@ const App = () => {
     // Load vocabulary from global
     const vocabulary = typeof VOCABULARY_DATA !== 'undefined' ? VOCABULARY_DATA : [];
 
-    // Load data on mount
+    // Load data on mount and run migration
     useEffect(() => {
+        // Run migration if needed
+        Storage.migrateToUnifiedProgress();
+
         setProgress(Storage.getWordProgress());
         setSettings(Storage.getSettings());
         setStats(Storage.getStats());
@@ -25,7 +28,7 @@ const App = () => {
         setStats(Storage.getStats());
     }, []);
 
-    // Exit session handler - wrapped in useCallback for ESC key listener
+    // Exit session handler
     const handleExitSession = useCallback(() => {
         setStudyMode(null);
         setProgress(Storage.getWordProgress());
@@ -50,12 +53,17 @@ const App = () => {
         setSettings(newSettings);
     };
 
-    // Start study mode (learning new words)
+    // Start smart study mode (unified session)
+    const handleStartSmartStudy = () => {
+        setStudyMode('smart');
+    };
+
+    // Start classic study mode (for backward compatibility)
     const handleStartStudy = () => {
         setStudyMode('study');
     };
 
-    // Start quiz mode (reviewing)
+    // Start quiz mode
     const handleStartQuiz = () => {
         setStudyMode('quiz');
     };
@@ -69,11 +77,46 @@ const App = () => {
     // Navigate to library with specific stack filter
     const handleNavigateToLibrary = (stack) => {
         setActiveTab('library');
-        // Store the desired stack in sessionStorage for the Library component
         sessionStorage.setItem('libraryInitialStack', stack);
     };
 
-    // Render study mode
+    // Handle resource navigation from dropdown
+    const handleResourceNavigate = (resourceId) => {
+        setActiveTab(resourceId);
+    };
+
+    // Check if current tab is a resource (for dropdown)
+    const isResourceTab = ['kana', 'radicals', 'grammar', 'library', 'kanji', 'heisig'].includes(activeTab);
+
+    // Render smart study session
+    if (studyMode === 'smart') {
+        return (
+            <div className="app-container app-container-full">
+                <header className="app-header session-active">
+                    <div className="app-logo" onClick={handleExitSession} style={{ cursor: 'pointer' }}>
+                        <span className="app-logo-kanji japanese">日本語</span>
+                    </div>
+                    <nav className="nav-tabs nav-muted">
+                        <button className="nav-tab" onClick={handleExitSession}>Home</button>
+                        <button className="nav-tab nav-tab-action active">Study</button>
+                        <button className="nav-tab nav-tab-action" onClick={() => { handleExitSession(); setTimeout(() => handleStartQuiz(), 0); }}>Quiz</button>
+                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('progress'); }}>Progress</button>
+                        <ResourceDropdown activeTab="" onNavigate={(id) => { handleExitSession(); setActiveTab(id); }} />
+                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('settings'); }}>Settings</button>
+                    </nav>
+                </header>
+                <SmartStudySession
+                    vocabulary={vocabulary}
+                    progress={progress}
+                    settings={settings}
+                    onComplete={handleCompleteSession}
+                    onExit={handleExitSession}
+                />
+            </div>
+        );
+    }
+
+    // Render classic study mode (backward compatibility)
     if (studyMode === 'study') {
         return (
             <div className="app-container app-container-full">
@@ -85,10 +128,8 @@ const App = () => {
                         <button className="nav-tab" onClick={handleExitSession}>Home</button>
                         <button className="nav-tab nav-tab-action active">Study</button>
                         <button className="nav-tab nav-tab-action" onClick={() => { handleExitSession(); setTimeout(() => handleStartQuiz(), 0); }}>Quiz</button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('library'); }}>Library</button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kana'); }}>Kana</button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kanji'); }}><span className="japanese">漢字</span></button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('grammar'); }}>Grammar</button>
+                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('progress'); }}>Progress</button>
+                        <ResourceDropdown activeTab="" onNavigate={(id) => { handleExitSession(); setActiveTab(id); }} />
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('settings'); }}>Settings</button>
                     </nav>
                 </header>
@@ -113,12 +154,10 @@ const App = () => {
                     </div>
                     <nav className="nav-tabs nav-muted">
                         <button className="nav-tab" onClick={handleExitSession}>Home</button>
-                        <button className="nav-tab nav-tab-action" onClick={() => { handleExitSession(); setTimeout(() => handleStartStudy(), 0); }}>Study</button>
+                        <button className="nav-tab nav-tab-action" onClick={() => { handleExitSession(); setTimeout(() => handleStartSmartStudy(), 0); }}>Study</button>
                         <button className="nav-tab nav-tab-action active">Quiz</button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('library'); }}>Library</button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kana'); }}>Kana</button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('kanji'); }}><span className="japanese">漢字</span></button>
-                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('grammar'); }}>Grammar</button>
+                        <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('progress'); }}>Progress</button>
+                        <ResourceDropdown activeTab="" onNavigate={(id) => { handleExitSession(); setActiveTab(id); }} />
                         <button className="nav-tab" onClick={() => { handleExitSession(); setActiveTab('settings'); }}>Settings</button>
                     </nav>
                 </header>
@@ -135,7 +174,7 @@ const App = () => {
 
     return (
         <div className="app-container">
-            {/* Header */}
+            {/* Header with new navigation */}
             <header className="app-header">
                 <div className="app-logo" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
                     <span className="app-logo-kanji japanese">日本語</span>
@@ -149,7 +188,7 @@ const App = () => {
                     </button>
                     <button
                         className="nav-tab nav-tab-action"
-                        onClick={handleStartStudy}
+                        onClick={handleStartSmartStudy}
                     >
                         Study
                     </button>
@@ -160,29 +199,15 @@ const App = () => {
                         Quiz
                     </button>
                     <button
-                        className={`nav-tab ${activeTab === 'library' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('library')}
+                        className={`nav-tab ${activeTab === 'progress' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('progress')}
                     >
-                        Library
+                        Progress
                     </button>
-                    <button
-                        className={`nav-tab ${activeTab === 'kana' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('kana')}
-                    >
-                        Kana
-                    </button>
-                    <button
-                        className={`nav-tab ${activeTab === 'kanji' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('kanji')}
-                    >
-                        <span className="japanese">漢字</span>
-                    </button>
-                    <button
-                        className={`nav-tab ${activeTab === 'grammar' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('grammar')}
-                    >
-                        Grammar
-                    </button>
+                    <ResourceDropdown
+                        activeTab={activeTab}
+                        onNavigate={handleResourceNavigate}
+                    />
                     <button
                         className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
                         onClick={() => setActiveTab('settings')}
@@ -200,10 +225,18 @@ const App = () => {
                         progress={progress}
                         settings={settings}
                         stats={stats}
-                        onStartStudy={handleStartStudy}
+                        onStartStudy={handleStartSmartStudy}
                         onStartQuiz={handleStartQuiz}
                         onRefresh={refreshProgress}
                         onNavigateToLibrary={handleNavigateToLibrary}
+                    />
+                )}
+
+                {activeTab === 'progress' && (
+                    <Progress
+                        vocabulary={vocabulary}
+                        progress={progress}
+                        stats={stats}
                     />
                 )}
 
@@ -223,8 +256,16 @@ const App = () => {
                     <Kanji vocabulary={vocabulary} progress={progress} />
                 )}
 
+                {activeTab === 'heisig' && (
+                    <HeisigStudy onNavigateToKana={() => setActiveTab('kana')} />
+                )}
+
                 {activeTab === 'grammar' && (
                     <Grammar />
+                )}
+
+                {activeTab === 'radicals' && (
+                    <RadicalLibrary vocabulary={vocabulary} progress={progress} />
                 )}
 
                 {activeTab === 'settings' && (
@@ -250,6 +291,103 @@ const App = () => {
         </div>
     );
 };
+
+// Radical Library Component (placeholder that shows radicals from the Kanji section)
+const RadicalLibrary = ({ vocabulary, progress }) => {
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const categories = RADICALS_DATA?.categories || [];
+    const radicals = RADICALS_DATA?.radicals || [];
+    const unifiedProgress = Storage.getUnifiedProgress();
+
+    // Filter radicals
+    const filteredRadicals = radicals.filter(radical => {
+        const matchesCategory = selectedCategory === 'all' || radical.category === selectedCategory;
+        const matchesSearch = !searchTerm ||
+            radical.char.includes(searchTerm) ||
+            radical.meaning.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (radical.name && radical.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        return matchesCategory && matchesSearch;
+    });
+
+    // Get radical status
+    const getRadicalStatus = (radical) => {
+        const prog = unifiedProgress[`radical_${radical.char}`];
+        if (!prog) return 'unlearned';
+        return prog.stack;
+    };
+
+    // Check if priority radical
+    const isPriority = (radical) => {
+        return PRIORITY_RADICALS?.isPriority(radical.char);
+    };
+
+    return (
+        <div className="radical-library">
+            <div className="radical-library-header">
+                <h2>Radical Library</h2>
+                <p className="radical-library-subtitle">
+                    214 Kangxi radicals - Building blocks of kanji
+                </p>
+            </div>
+
+            {/* Filters */}
+            <div className="radical-library-filters">
+                <input
+                    type="text"
+                    className="radical-search"
+                    placeholder="Search radicals..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <div className="category-filters">
+                    <button
+                        className={`category-btn ${selectedCategory === 'all' ? 'active' : ''}`}
+                        onClick={() => setSelectedCategory('all')}
+                    >
+                        All
+                    </button>
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            style={{ '--cat-color': cat.color }}
+                        >
+                            {cat.icon} {cat.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Radicals grid */}
+            <div className="radical-grid">
+                {filteredRadicals.map(radical => {
+                    const status = getRadicalStatus(radical);
+                    const priority = isPriority(radical);
+
+                    return (
+                        <div
+                            key={radical.char}
+                            className={`radical-card ${status} ${priority ? 'priority' : ''}`}
+                            title={`${radical.meaning}${radical.name ? ` (${radical.name})` : ''}`}
+                        >
+                            <div className="radical-card-char japanese">{radical.char}</div>
+                            <div className="radical-card-meaning">{radical.meaning}</div>
+                            <div className="radical-card-strokes">{radical.strokes} strokes</div>
+                            {priority && <div className="priority-badge">Core</div>}
+                            {status === 'known' && <div className="status-badge known">✓</div>}
+                            {status === 'learning' && <div className="status-badge learning">📖</div>}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+window.RadicalLibrary = RadicalLibrary;
 
 // Render the app
 const root = ReactDOM.createRoot(document.getElementById('root'));
