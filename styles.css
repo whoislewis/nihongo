@@ -1008,9 +1008,11 @@ h3 {
     letter-spacing: 0.05em;
 }
 
-/* Study Card Large (for Study Mode) */
+/* Study Card Large (for Study Mode) - CONSISTENT WIDTH FOR ALL CARDS */
 .study-card-large {
-    max-width: 600px;
+    max-width: 650px;
+    min-width: 320px;
+    width: 100%;
     text-align: left;
 }
 
@@ -1048,23 +1050,30 @@ h3 {
     margin-top: var(--space-md);
 }
 
-/* Audio Button */
+/* Audio Button - FIXED dimensions to prevent layout shift */
 .btn-audio {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: 44px;
+    max-height: 44px;
     border: none;
     background: var(--color-bg-warm);
     border-radius: 50%;
     font-size: 1.25rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast);
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .btn-audio:hover {
     background: var(--color-sand);
+    /* NO transform - prevents layout shift */
 }
 
 .btn-audio-small {
@@ -2368,7 +2377,7 @@ h3 {
 
 .btn-audio:hover {
     opacity: 1;
-    transform: scale(1.1);
+    /* Removed transform to prevent layout shift */
 }
 
 .btn-audio-inline {
@@ -2397,7 +2406,7 @@ h3 {
 
 .btn-audio-large:hover {
     background: var(--color-sand);
-    transform: scale(1.05);
+    /* Removed transform to prevent layout shift */
 }
 
 /* Pattern Card Updates */
@@ -4013,7 +4022,7 @@ h3 {
 
 .btn-audio-large:hover {
     background: var(--color-sand-dark);
-    transform: scale(1.05);
+    /* Removed transform to prevent layout shift */
 }
 
 .radical-detail-info {
@@ -5577,6 +5586,13 @@ h3 {
     border-radius: var(--radius-md);
     padding: var(--space-md);
     transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.learning-stage-card:hover:not(.soft-locked) {
+    border-color: var(--color-terracotta);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .learning-stage-card.active {
@@ -5584,14 +5600,28 @@ h3 {
     box-shadow: 0 0 0 1px var(--color-primary);
 }
 
+.learning-stage-card.active:hover {
+    border-color: var(--color-terracotta);
+}
+
 .learning-stage-card.complete {
     background: var(--color-success-light);
+    border-color: var(--color-success);
+}
+
+.learning-stage-card.complete:hover {
     border-color: var(--color-success);
 }
 
 .learning-stage-card.soft-locked {
     opacity: 0.6;
     background: var(--color-bg-warm);
+    cursor: not-allowed;
+}
+
+.learning-stage-card.soft-locked:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .stage-header {
@@ -5967,6 +5997,10 @@ h3 {
 
 .card-type-badge.grammar {
     background: var(--color-ochre);
+}
+
+.card-type-badge.heisig {
+    background: var(--color-terracotta);
 }
 
 .dependency-warning {

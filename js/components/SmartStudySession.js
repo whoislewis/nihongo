@@ -1,7 +1,7 @@
 // Smart Study Session Component
 // Unified study interface handling vocabulary, radical, kanji, and grammar cards
 
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useRef } = React;
 
 const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit }) => {
     const [session, setSession] = useState(null);
@@ -15,16 +15,19 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
     const [showKanaQuiz, setShowKanaQuiz] = useState(false);
     const [showDebugControls, setShowDebugControls] = useState(false);
     const [kanaMastery, setKanaMastery] = useState(Storage.getKanaMastery());
+    const [learningPath, setLearningPath] = useState(null);
+    const containerRef = useRef(null);
 
     // Refresh kana mastery when quiz completes
     const refreshKanaMastery = useCallback(() => {
         setKanaMastery(Storage.getKanaMastery());
     }, []);
 
-    // Build smart session on mount
+    // Build smart session on mount and track learning path
     useEffect(() => {
         const stageProgress = Storage.getStageProgress();
         const foundationProgress = Storage.getFoundationProgress();
+        const unifiedProgress = Storage.getUnifiedProgress();
 
         const smartSession = SmartQueue.buildSession(
             vocabulary,
@@ -35,7 +38,61 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
         );
 
         setSession(smartSession);
+
+        // Build learning path for breadcrumb navigation
+        const kanaMastery = Storage.getKanaMastery();
+        const heisigCount = SmartQueue.getLearnedHeisigCount(unifiedProgress);
+        const grammarViewed = foundationProgress.grammarIntro?.viewedCards?.length || 0;
+        const kanjiIntroViewed = foundationProgress.kanjiIntro?.viewedCards?.length || 0;
+
+        setLearningPath({
+            kana: {
+                complete: kanaMastery.totalComplete,
+                hiragana: kanaMastery.hiraganaCount,
+                katakana: kanaMastery.katakanaCount
+            },
+            grammarIntro: {
+                viewed: grammarViewed,
+                total: 6,
+                complete: grammarViewed >= 6
+            },
+            kanjiIntro: {
+                viewed: kanjiIntroViewed,
+                total: 6,
+                complete: kanjiIntroViewed >= 6
+            },
+            heisig: {
+                count: heisigCount,
+                vocabUnlockAt: SmartQueue.MIN_HEISIG_FOR_VOCAB
+            },
+            currentSection: smartSession.type
+        });
     }, [vocabulary, progress, settings]);
+
+    // Keyboard navigation (arrow keys)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Don't handle if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            // Don't handle if kana quiz is open
+            if (showKanaQuiz) return;
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (currentIndex > 0) {
+                    setCurrentIndex(currentIndex - 1);
+                }
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (session && currentIndex < session.items.length - 1) {
+                    setCurrentIndex(currentIndex + 1);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [currentIndex, session, showKanaQuiz]);
 
     // Get current item
     const currentItem = session?.items?.[currentIndex];
@@ -69,6 +126,13 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
         }
     }, [currentIndex, currentItem, vocabulary]);
 
+    // Dispatch progress update event for real-time sync across pages
+    const dispatchProgressUpdate = useCallback(() => {
+        window.dispatchEvent(new CustomEvent('nihongo-progress-update', {
+            detail: { timestamp: Date.now() }
+        }));
+    }, []);
+
     // Handle "I understand" for new items
     const handleUnderstood = () => {
         if (!currentItem) return;
@@ -90,6 +154,19 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
             // Mark radical as learning
             SRS.processAnswerForType(currentItem.char, 'radical', true, true);
             setSessionStats(prev => ({ ...prev, studied: prev.studied + 1 }));
+        } else if (currentItem.type === 'heisig_new') {
+            // Mark Heisig kanji as learning
+            Storage.updateItemProgress(currentItem.kanji, 'heisig', {
+                stack: 'learning',
+                successCount: 0,
+                failCount: 0,
+                interval: 1,
+                easeFactor: 2.5,
+                nextReview: new Date().toISOString(),
+                lastReview: new Date().toISOString()
+            });
+            Storage.recordStudy(true);
+            setSessionStats(prev => ({ ...prev, studied: prev.studied + 1 }));
         } else if (currentItem.type === 'grammar_intro' || currentItem.type === 'kanji_intro') {
             // Mark intro card as viewed
             if (currentItem.type === 'grammar_intro') {
@@ -102,6 +179,9 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
 
         // Check and advance stage
         StageManager.checkAndAdvanceStage();
+
+        // Dispatch progress update for real-time sync
+        dispatchProgressUpdate();
 
         moveToNext();
     };
@@ -189,6 +269,9 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
             case 'radical_new':
             case 'radical_review':
                 return renderRadicalCard();
+            case 'heisig_new':
+            case 'heisig_review':
+                return renderHeisigCard();
             case 'vocabulary_new':
             case 'vocabulary_review':
                 return renderVocabularyCard();
@@ -197,6 +280,159 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
             default:
                 return renderVocabularyCard();
         }
+    };
+
+    // Heisig kanji card - teaches meaning before reading
+    const renderHeisigCard = () => {
+        const remaining = (session.vocabUnlockAt || 50) - (session.heisigCount || 0);
+
+        return (
+            <div className="study-card study-card-large">
+                <div className="card-type-badge heisig">
+                    {currentItem.isNew ? 'New Kanji (Heisig)' : 'Kanji Review'}
+                    <span style={{ marginLeft: 'var(--space-sm)', opacity: 0.7, fontSize: '0.75rem' }}>
+                        Frame #{currentItem.frame}
+                    </span>
+                </div>
+
+                {/* Progress to vocabulary unlock */}
+                {remaining > 0 && currentItem.isNew && (
+                    <div style={{
+                        background: 'var(--color-bg-warm)',
+                        padding: 'var(--space-sm) var(--space-md)',
+                        borderRadius: 'var(--radius-sm)',
+                        marginBottom: 'var(--space-md)',
+                        fontSize: '0.8125rem',
+                        color: 'var(--color-text-secondary)'
+                    }}>
+                        Learn {remaining} more kanji to unlock vocabulary
+                    </div>
+                )}
+
+                <div className="heisig-card-content" style={{ textAlign: 'center' }}>
+                    {/* Large kanji display */}
+                    <div style={{
+                        fontSize: '5rem',
+                        fontWeight: '400',
+                        marginBottom: 'var(--space-md)',
+                        lineHeight: 1
+                    }} className="japanese">
+                        {currentItem.kanji}
+                    </div>
+
+                    {/* Keyword (meaning) - this is what we're learning */}
+                    <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: '600',
+                        marginBottom: 'var(--space-lg)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'var(--color-terracotta)'
+                    }}>
+                        {currentItem.keyword}
+                    </div>
+
+                    {/* Stroke count and lesson */}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 'var(--space-lg)',
+                        marginBottom: 'var(--space-lg)',
+                        fontSize: '0.875rem',
+                        color: 'var(--color-text-muted)'
+                    }}>
+                        <span>{currentItem.strokes} strokes</span>
+                        <span>Lesson {currentItem.lesson}</span>
+                    </div>
+
+                    {/* Story/Mnemonic */}
+                    {currentItem.story && (
+                        <div style={{
+                            background: 'var(--color-bg-warm)',
+                            padding: 'var(--space-lg)',
+                            borderRadius: 'var(--radius-md)',
+                            textAlign: 'left',
+                            marginBottom: 'var(--space-lg)'
+                        }}>
+                            <div style={{
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                color: 'var(--color-text-muted)',
+                                marginBottom: 'var(--space-sm)'
+                            }}>
+                                Memory Story
+                            </div>
+                            <p style={{ lineHeight: 1.6 }}>{currentItem.story}</p>
+                        </div>
+                    )}
+
+                    {/* Components */}
+                    {currentItem.components && currentItem.components.length > 0 && (
+                        <div style={{
+                            marginBottom: 'var(--space-lg)',
+                            textAlign: 'left'
+                        }}>
+                            <div style={{
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                color: 'var(--color-text-muted)',
+                                marginBottom: 'var(--space-sm)'
+                            }}>
+                                Components
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: 'var(--space-sm)'
+                            }}>
+                                {currentItem.components.map((comp, i) => (
+                                    <span key={i} style={{
+                                        background: 'var(--color-sand)',
+                                        padding: '4px 12px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        fontSize: '0.875rem'
+                                    }}>
+                                        {comp}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Primitive meaning if this kanji doubles as a primitive */}
+                    {currentItem.primitiveAs && (
+                        <div style={{
+                            background: 'var(--color-success-light)',
+                            padding: 'var(--space-md)',
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: 'var(--space-lg)',
+                            textAlign: 'left'
+                        }}>
+                            <div style={{
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: 'var(--color-success)',
+                                marginBottom: '4px'
+                            }}>
+                                When used as a primitive:
+                            </div>
+                            <span>{currentItem.primitiveAs}</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="study-actions-bottom">
+                    <button className="btn btn-primary" onClick={handleUnderstood}>
+                        I understand this ✓
+                    </button>
+                    <button className="btn btn-ghost btn-small" onClick={handleNext}>
+                        Skip for now →
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     // Kana practice card - shows real-time progress with individual character tracking
@@ -658,8 +894,97 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
         );
     }
 
+    // Render learning path breadcrumb
+    const renderBreadcrumb = () => {
+        if (!learningPath) return null;
+
+        const sections = [
+            {
+                id: 'kana',
+                label: 'Kana',
+                complete: learningPath.kana.complete,
+                progress: `${learningPath.kana.hiragana + learningPath.kana.katakana}/92`,
+                active: session.type === 'foundations' && !learningPath.kana.complete
+            },
+            {
+                id: 'grammar_intro',
+                label: 'Grammar Intro',
+                complete: learningPath.grammarIntro.complete,
+                progress: `${learningPath.grammarIntro.viewed}/${learningPath.grammarIntro.total}`,
+                active: currentItem?.type === 'grammar_intro',
+                locked: !learningPath.kana.complete
+            },
+            {
+                id: 'kanji_intro',
+                label: 'Kanji Intro',
+                complete: learningPath.kanjiIntro.complete,
+                progress: `${learningPath.kanjiIntro.viewed}/${learningPath.kanjiIntro.total}`,
+                active: currentItem?.type === 'kanji_intro',
+                locked: !learningPath.kana.complete
+            },
+            {
+                id: 'heisig',
+                label: 'Heisig',
+                complete: learningPath.heisig.count >= learningPath.heisig.vocabUnlockAt,
+                progress: `${learningPath.heisig.count}/${learningPath.heisig.vocabUnlockAt}`,
+                active: session.type === 'heisig',
+                locked: !learningPath.kana.complete
+            },
+            {
+                id: 'vocab',
+                label: 'Vocabulary',
+                complete: false,
+                progress: '',
+                active: session.type === 'mixed',
+                locked: learningPath.heisig.count < learningPath.heisig.vocabUnlockAt
+            }
+        ];
+
+        return (
+            <div className="study-breadcrumb" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-xs)',
+                marginBottom: 'var(--space-md)',
+                padding: 'var(--space-sm) var(--space-md)',
+                background: 'var(--color-bg-warm)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.75rem',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                maxWidth: '700px',
+                width: '100%'
+            }}>
+                {sections.map((section, idx) => (
+                    <React.Fragment key={section.id}>
+                        {idx > 0 && (
+                            <span style={{ color: 'var(--color-text-muted)', margin: '0 2px' }}>→</span>
+                        )}
+                        <span style={{
+                            padding: '4px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: section.active ? 'var(--color-terracotta)' : section.complete ? 'var(--color-success)' : 'transparent',
+                            color: section.active ? 'white' : section.complete ? 'white' : section.locked ? 'var(--color-text-muted)' : 'var(--color-text)',
+                            fontWeight: section.active ? '600' : '400',
+                            opacity: section.locked ? 0.5 : 1,
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {section.complete && !section.active ? '✓ ' : ''}{section.label}
+                            {section.progress && !section.complete && (
+                                <span style={{ marginLeft: '4px', opacity: 0.7 }}>({section.progress})</span>
+                            )}
+                        </span>
+                    </React.Fragment>
+                ))}
+            </div>
+        );
+    };
+
     return (
-        <div className="study-container">
+        <div className="study-container" ref={containerRef}>
+            {/* Learning path breadcrumb */}
+            {renderBreadcrumb()}
+
             {/* Progress bar */}
             <div className="study-progress" style={{ width: '100%', maxWidth: '700px', marginBottom: 'var(--space-lg)' }}>
                 <div className="study-progress-text">
@@ -683,6 +1008,7 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                         className="nav-arrow nav-arrow-left"
                         onClick={handlePrevious}
                         disabled={currentIndex === 0}
+                        title="Previous (←)"
                     >
                         ←
                     </button>
@@ -694,10 +1020,21 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                     <button
                         className="nav-arrow nav-arrow-right"
                         onClick={handleNext}
+                        title="Next (→)"
                     >
                         →
                     </button>
                 )}
+            </div>
+
+            {/* Keyboard hint */}
+            <div style={{
+                marginTop: 'var(--space-md)',
+                fontSize: '0.75rem',
+                color: 'var(--color-text-muted)',
+                textAlign: 'center'
+            }}>
+                Use ← → arrow keys to navigate
             </div>
         </div>
     );

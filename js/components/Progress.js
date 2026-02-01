@@ -7,10 +7,38 @@ const Progress = ({ vocabulary, progress, stats }) => {
     const [stagesData, setStagesData] = useState([]);
     const [activeView, setActiveView] = useState('overview'); // 'overview', 'stats', 'achievements'
 
-    // Load stage data
+    // Load stage data and listen for progress updates
     useEffect(() => {
-        const summary = StageManager.getDashboardSummary();
-        setStagesData(summary.allStages);
+        const refreshData = () => {
+            const summary = StageManager.getDashboardSummary();
+            setStagesData(summary.allStages);
+        };
+
+        refreshData();
+
+        // Listen for progress updates from study/quiz sessions
+        const handleProgressUpdate = () => {
+            refreshData();
+        };
+        window.addEventListener('nihongo-progress-update', handleProgressUpdate);
+
+        // Also listen for storage changes
+        const handleStorageChange = (e) => {
+            if (e.key && e.key.includes('nihongo')) {
+                refreshData();
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+
+        // Refresh on focus
+        const handleFocus = () => refreshData();
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            window.removeEventListener('nihongo-progress-update', handleProgressUpdate);
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, [progress]);
 
     // Calculate detailed stats
@@ -71,7 +99,7 @@ const Progress = ({ vocabulary, progress, stats }) => {
             { id: 'month_streak', name: 'Dedicated', description: '30-day study streak', icon: '⚡', condition: () => detailedStats.streak >= 30 },
             { id: 'first_radical', name: 'Radical Beginner', description: 'Learn your first radical', icon: '部', condition: () => detailedStats.radicals.learning + detailedStats.radicals.known > 0 },
             { id: 'all_radicals', name: 'Radical Master', description: 'Learn all 50 core radicals', icon: '🧱', condition: () => detailedStats.radicals.known >= 50 },
-            { id: 'foundations', name: 'Foundation Built', description: 'Complete foundations stage', icon: '🌱', condition: () => stagesData.find(s => s.id === 'foundations')?.complete },
+            { id: 'kana_mastery', name: 'Kana Master', description: 'Master all hiragana and katakana', icon: 'あ', condition: () => stagesData.find(s => s.id === 'kana_mastery')?.complete },
             { id: 'accuracy_90', name: 'Sharp Mind', description: '90%+ review accuracy', icon: '🎯', condition: () => detailedStats.accuracy >= 90 && detailedStats.totalReviews >= 50 },
         ];
 

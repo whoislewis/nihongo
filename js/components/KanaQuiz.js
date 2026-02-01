@@ -111,6 +111,11 @@ const KanaQuiz = ({ onComplete, onExit }) => {
             Storage.masterKana(currentQuestion.kana, quizType);
             setSessionMastered(prev => [...prev, currentQuestion.kana]);
 
+            // Dispatch progress update for real-time sync across pages
+            window.dispatchEvent(new CustomEvent('nihongo-progress-update', {
+                detail: { timestamp: Date.now(), type: 'kana' }
+            }));
+
             // Auto-advance after 0.5 seconds for correct answers
             autoAdvanceRef.current = setTimeout(() => {
                 handleNext();

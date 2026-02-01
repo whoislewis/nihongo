@@ -5,7 +5,7 @@ const StageManager = {
     // Get the currently active stage
     getActiveStage(progress) {
         const stageProgress = progress || Storage.getStageProgress();
-        return stageProgress.currentStage || 'foundations';
+        return stageProgress.currentStage || 'kana_mastery';
     },
 
     // Check if a specific stage is complete
@@ -16,18 +16,21 @@ const StageManager = {
         const wordProgress = Storage.getWordProgress();
 
         switch (stageId) {
-            case 'foundations':
-                return this.isFoundationsComplete(foundationProgress);
+            case 'kana_mastery':
+                // Kana mastery is complete when both hiragana AND katakana are 100%
+                const kanaMastery = Storage.getKanaMastery();
+                return kanaMastery.hiraganaComplete && kanaMastery.katakanaComplete;
 
-            case 'core_radicals':
-                return this.isCoreRadicalsComplete(unifiedProgress);
+            case 'heisig_kanji':
+                // Heisig stage complete when 300+ kanji learned via Heisig method
+                return this.getLearnedHeisigCount(unifiedProgress) >= 300;
 
-            case 'vocabulary_kanji':
-                // Progressive stage - never truly "complete"
+            case 'vocabulary_building':
+                // Progressive stage - never truly "complete" but milestone at 1500
                 return this.getKnownWordsCount(wordProgress) >= 1500;
 
-            case 'advanced_grammar':
-                // Unlocks at 100 words, completes when all patterns learned
+            case 'grammar_mastery':
+                // Unlocks at 50 words, completes when all patterns learned
                 return false; // Can define completion criteria later
 
             default:
@@ -35,45 +38,21 @@ const StageManager = {
         }
     },
 
-    // Check foundations completion - uses new individual kana mastery
-    isFoundationsComplete(foundationProgress) {
-        if (!foundationProgress) {
-            foundationProgress = Storage.getFoundationProgress();
-        }
-
-        // Use new kana mastery system - both must be 100%
-        const kanaMastery = Storage.getKanaMastery();
-        const kanaComplete = kanaMastery.hiraganaComplete && kanaMastery.katakanaComplete;
-
-        // Grammar and kanji intro only count AFTER kana is complete
-        if (!kanaComplete) return false;
-
-        const grammarComplete = foundationProgress.grammarIntro?.completed;
-        const kanjiIntroComplete = foundationProgress.kanjiIntro?.completed;
-
-        return kanaComplete && grammarComplete && kanjiIntroComplete;
-    },
-
-    // Check core radicals completion
-    isCoreRadicalsComplete(unifiedProgress) {
-        const learnedCount = this.getLearnedRadicalsCount(unifiedProgress);
-        return learnedCount >= 50;
-    },
-
-    // Get learned radicals count
-    getLearnedRadicalsCount(unifiedProgress) {
+    // Get count of Heisig kanji learned
+    getLearnedHeisigCount(unifiedProgress) {
         if (!unifiedProgress) {
             unifiedProgress = Storage.getUnifiedProgress();
         }
 
         let count = 0;
         Object.entries(unifiedProgress).forEach(([key, data]) => {
-            if (key.startsWith('radical_') && (data.stack === 'learning' || data.stack === 'known')) {
+            if (key.startsWith('heisig_') && (data.stack === 'learning' || data.stack === 'known')) {
                 count++;
             }
         });
         return count;
     },
+
 
     // Get known words count
     getKnownWordsCount(wordProgress) {
@@ -145,22 +124,22 @@ const StageManager = {
         const wordProgress = Storage.getWordProgress();
 
         switch (stageId) {
-            case 'foundations':
-                return this.getFoundationsProgress(foundationProgress);
+            case 'kana_mastery':
+                return this.getKanaMasteryProgress();
 
-            case 'core_radicals':
-                const radicalsLearned = this.getLearnedRadicalsCount(unifiedProgress);
+            case 'heisig_kanji':
+                const heisigLearned = this.getLearnedHeisigCount(unifiedProgress);
                 return {
-                    percent: Math.round((radicalsLearned / 50) * 100),
-                    current: radicalsLearned,
-                    target: 50,
+                    percent: Math.round((heisigLearned / 300) * 100),
+                    current: heisigLearned,
+                    target: 300,
                     details: {
-                        learned: radicalsLearned,
-                        remaining: Math.max(0, 50 - radicalsLearned)
+                        learned: heisigLearned,
+                        remaining: Math.max(0, 300 - heisigLearned)
                     }
                 };
 
-            case 'vocabulary_kanji':
+            case 'vocabulary_building':
                 const wordsKnown = this.getKnownWordsCount(wordProgress);
                 const wordsLearning = this.getLearningWordsCount(wordProgress);
                 return {
@@ -174,7 +153,7 @@ const StageManager = {
                     }
                 };
 
-            case 'advanced_grammar':
+            case 'grammar_mastery':
                 // Can be expanded with grammar tracking
                 return {
                     percent: 0,
@@ -188,59 +167,32 @@ const StageManager = {
         }
     },
 
-    // Get detailed foundations progress - uses new individual kana mastery
-    getFoundationsProgress(foundationProgress) {
-        if (!foundationProgress) {
-            foundationProgress = Storage.getFoundationProgress();
-        }
-
-        // Use new kana mastery system
+    // Get kana mastery progress using new individual character tracking
+    getKanaMasteryProgress() {
         const kanaMastery = Storage.getKanaMastery();
-        const grammarViewed = foundationProgress.grammarIntro?.viewedCards?.length || 0;
-        const kanjiViewed = foundationProgress.kanjiIntro?.viewedCards?.length || 0;
 
-        // Calculate kana progress (both must be 100%)
-        const hiraganaProgress = kanaMastery.hiraganaPercent / 100;  // 0-1
-        const katakanaProgress = kanaMastery.katakanaPercent / 100;  // 0-1
-        const kanaProgress = (hiraganaProgress + katakanaProgress) / 2;  // Average
-
-        // Kana is 60% of foundations, grammar and kanji intro split remaining 40%
-        // But only count grammar/kanji if kana is complete
-        let overallPercent;
-        if (!kanaMastery.totalComplete) {
-            // Kana not complete - show just kana progress (scaled to 60%)
-            overallPercent = Math.round(kanaProgress * 60);
-        } else {
-            // Kana complete - include grammar and kanji intro
-            const grammarProgress = grammarViewed / 6;  // 0-1
-            const kanjiProgress = kanjiViewed / 6;  // 0-1
-            overallPercent = Math.round(
-                60 + (grammarProgress * 20) + (kanjiProgress * 20)
-            );
-        }
+        const totalMastered = kanaMastery.hiraganaCount + kanaMastery.katakanaCount;
+        const totalRequired = 92; // 46 hiragana + 46 katakana
+        const percent = Math.round((totalMastered / totalRequired) * 100);
 
         return {
-            percent: overallPercent,
-            current: overallPercent,
-            target: 100,
+            percent: percent,
+            current: totalMastered,
+            target: totalRequired,
             details: {
-                kana: {
-                    hiraganaCount: kanaMastery.hiraganaCount,
-                    katakanaCount: kanaMastery.katakanaCount,
-                    hiraganaPercent: kanaMastery.hiraganaPercent,
-                    katakanaPercent: kanaMastery.katakanaPercent,
-                    complete: kanaMastery.totalComplete
+                hiragana: {
+                    count: kanaMastery.hiraganaCount,
+                    total: 46,
+                    percent: kanaMastery.hiraganaPercent,
+                    complete: kanaMastery.hiraganaComplete
                 },
-                grammar: {
-                    viewed: grammarViewed,
-                    total: 6,
-                    complete: grammarViewed >= 6
+                katakana: {
+                    count: kanaMastery.katakanaCount,
+                    total: 46,
+                    percent: kanaMastery.katakanaPercent,
+                    complete: kanaMastery.katakanaComplete
                 },
-                kanjiIntro: {
-                    viewed: kanjiViewed,
-                    total: 6,
-                    complete: kanjiViewed >= 6
-                }
+                totalComplete: kanaMastery.totalComplete
             }
         };
     },
@@ -324,12 +276,11 @@ const StageManager = {
         const stageProgress = this.getStageProgress(currentStageId);
 
         switch (currentStageId) {
-            case 'foundations':
-                const foundDetails = stageProgress.details;
-                // Check kana first (both must be 100%)
-                if (!foundDetails.kana.complete) {
-                    const hiraganaRemaining = 46 - foundDetails.kana.hiraganaCount;
-                    const katakanaRemaining = 46 - foundDetails.kana.katakanaCount;
+            case 'kana_mastery':
+                const kanaDetails = stageProgress.details;
+                if (!kanaDetails.totalComplete) {
+                    const hiraganaRemaining = 46 - kanaDetails.hiragana.count;
+                    const katakanaRemaining = 46 - kanaDetails.katakana.count;
                     if (hiraganaRemaining > 0 && katakanaRemaining > 0) {
                         return {
                             text: `Master ${hiraganaRemaining} hiragana + ${katakanaRemaining} katakana`,
@@ -341,21 +292,21 @@ const StageManager = {
                         return { text: `Master ${katakanaRemaining} more katakana`, type: 'kana' };
                     }
                 }
-                if (!foundDetails.grammar.complete) {
-                    return { text: `View ${6 - foundDetails.grammar.viewed} more grammar cards`, type: 'grammar' };
-                }
-                if (!foundDetails.kanjiIntro.complete) {
-                    return { text: `View ${6 - foundDetails.kanjiIntro.viewed} more kanji intro cards`, type: 'kanji' };
-                }
-                return { text: 'Foundations complete!', type: 'complete' };
+                return { text: 'Kana mastery complete!', type: 'complete' };
 
-            case 'core_radicals':
-                const remaining = 50 - stageProgress.current;
-                return { text: `Learn ${remaining} more radicals`, type: 'radicals' };
+            case 'heisig_kanji':
+                const heisigRemaining = 300 - stageProgress.current;
+                if (heisigRemaining > 0) {
+                    return { text: `Learn ${heisigRemaining} more kanji`, type: 'kanji' };
+                }
+                return { text: 'Heisig foundation complete!', type: 'complete' };
 
-            case 'vocabulary_kanji':
+            case 'vocabulary_building':
                 const nextGoal = Math.ceil(stageProgress.current / 100) * 100 + 100;
                 return { text: `Reach ${nextGoal} words known`, type: 'vocabulary' };
+
+            case 'grammar_mastery':
+                return { text: 'Continue learning grammar patterns', type: 'grammar' };
 
             default:
                 return { text: 'Keep learning!', type: 'general' };

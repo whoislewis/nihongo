@@ -28,14 +28,20 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
 
         refreshStageData();
 
-        // Also listen for storage changes (for cross-tab sync)
+        // Listen for storage changes (for cross-tab sync)
         const handleStorageChange = (e) => {
             if (e.key && e.key.includes('nihongo')) {
                 refreshStageData();
             }
         };
-
         window.addEventListener('storage', handleStorageChange);
+
+        // Listen for progress updates from study/quiz sessions
+        const handleProgressUpdate = () => {
+            refreshStageData();
+            onRefresh(); // Also refresh parent state
+        };
+        window.addEventListener('nihongo-progress-update', handleProgressUpdate);
 
         // Refresh when window gains focus (returning from study)
         const handleFocus = () => {
@@ -45,9 +51,10 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
 
         return () => {
             window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('nihongo-progress-update', handleProgressUpdate);
             window.removeEventListener('focus', handleFocus);
         };
-    }, [progress]);
+    }, [progress, onRefresh]);
 
     // Daily Japanese facts
     const japaneseFacts = [
@@ -139,10 +146,20 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
                             const isLocked = stage.status === 'locked';
                             const kanaMastery = Storage.getKanaMastery();
 
+                            // Handle stage click - start appropriate study mode
+                            const handleStageClick = () => {
+                                if (isLocked) return; // Can't click locked stages
+                                // Start study - the SmartQueue will route to correct content
+                                onStartStudy();
+                            };
+
                             return (
                                 <div
                                     key={stage.id}
                                     className={`learning-stage-card ${stage.complete ? 'complete' : ''} ${stage.status === 'active' ? 'active' : ''} ${isLocked ? 'soft-locked' : ''}`}
+                                    onClick={handleStageClick}
+                                    style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
+                                    title={isLocked ? 'Complete Kana Mastery to unlock' : `Click to study ${stage.name}`}
                                 >
                                     <div className="stage-header">
                                         <span className="stage-icon">{stage.complete ? '✅' : stage.icon}</span>
@@ -166,22 +183,36 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
                                         </div>
                                     )}
 
-                                    {stage.id === 'heisig_kanji' && (
-                                        <div className="stage-submilestones">
-                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
-                                                <span className="submilestone-name">Primitives</span>
-                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/20</span>
+                                    {stage.id === 'heisig_kanji' && (() => {
+                                        // Get actual Heisig progress
+                                        const unifiedProgress = Storage.getUnifiedProgress();
+                                        const heisigCount = Object.entries(unifiedProgress).filter(
+                                            ([key, data]) => key.startsWith('heisig_') && (data.stack === 'learning' || data.stack === 'known')
+                                        ).length;
+                                        // Primitives are frames 1-20 (simple kanji that become building blocks)
+                                        const primitivesLearned = Math.min(heisigCount, 20);
+                                        // Lessons 1-3 are frames 1-50
+                                        const lessons1to3 = Math.min(Math.max(0, heisigCount - 0), 50);
+                                        // Lessons 4-10 are frames 51-250
+                                        const lessons4to10 = Math.max(0, heisigCount - 50);
+
+                                        return (
+                                            <div className="stage-submilestones">
+                                                <div className={`submilestone ${isLocked ? 'locked' : primitivesLearned >= 20 ? 'complete' : ''}`}>
+                                                    <span className="submilestone-name">Primitives</span>
+                                                    <span className="submilestone-progress">{isLocked ? '-' : primitivesLearned}/20</span>
+                                                </div>
+                                                <div className={`submilestone ${isLocked ? 'locked' : lessons1to3 >= 50 ? 'complete' : ''}`}>
+                                                    <span className="submilestone-name">Lessons 1-3</span>
+                                                    <span className="submilestone-progress">{isLocked ? '-' : lessons1to3}/50</span>
+                                                </div>
+                                                <div className={`submilestone ${isLocked ? 'locked' : lessons4to10 >= 200 ? 'complete' : ''}`}>
+                                                    <span className="submilestone-name">Lessons 4-10</span>
+                                                    <span className="submilestone-progress">{isLocked ? '-' : lessons4to10}/200</span>
+                                                </div>
                                             </div>
-                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
-                                                <span className="submilestone-name">Lessons 1-3</span>
-                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/50</span>
-                                            </div>
-                                            <div className={`submilestone ${isLocked ? 'locked' : ''}`}>
-                                                <span className="submilestone-name">Lessons 4-10</span>
-                                                <span className="submilestone-progress">{isLocked ? '-' : '0'}/200</span>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     {stage.id === 'vocabulary_building' && (
                                         <div className="stage-submilestones">

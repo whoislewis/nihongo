@@ -104,6 +104,11 @@ const StudySession = ({ vocabulary, progress, settings, onComplete, onExit }) =>
             currentWord.isNew || false,
             settings
         );
+
+        // Dispatch progress update for real-time sync across pages
+        window.dispatchEvent(new CustomEvent('nihongo-progress-update', {
+            detail: { timestamp: Date.now(), type: 'quiz' }
+        }));
     };
 
     // Move to next word

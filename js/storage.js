@@ -26,21 +26,19 @@ const DEFAULT_SETTINGS = {
 
 // Default stage progress
 const DEFAULT_STAGE_PROGRESS = {
-    currentStage: 'foundations',
+    currentStage: 'kana_mastery',
     completedStages: [],
     stageData: {
-        foundations: {
-            kanaScore: 0,
-            grammarCardsViewed: [],
-            kanjiCardsViewed: []
+        kana_mastery: {
+            // Individual kana tracking stored in foundation progress
         },
-        core_radicals: {
-            radicalsLearned: []
+        heisig_kanji: {
+            kanjiLearned: []
         },
-        vocabulary_kanji: {
+        vocabulary_building: {
             wordsLearned: 0
         },
-        advanced_grammar: {
+        grammar_mastery: {
             unlocked: false,
             patternsLearned: []
         }

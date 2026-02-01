@@ -8,53 +8,62 @@ const SmartQueue = {
         newItems: 0.30      // 30% new learnable items
     },
 
+    // Minimum Heisig kanji required before vocabulary unlocks
+    MIN_HEISIG_FOR_VOCAB: 50,
+
     // Build a smart study session based on current stage
     buildSession(vocabulary, progress, settings, stageProgress, foundationProgress) {
-        const currentStage = stageProgress?.currentStage || 'foundations';
+        const currentStage = stageProgress?.currentStage || 'kana_mastery';
         const unifiedProgress = Storage.getUnifiedProgress();
+        const heisigCount = this.getLearnedHeisigCount(unifiedProgress);
 
-        // Stage 1: Foundations
-        if (currentStage === 'foundations' && !this.isFoundationsComplete(foundationProgress)) {
+        // Stage 1: Kana Mastery
+        if (!this.isKanaMasteryComplete(foundationProgress)) {
             return this.buildFoundationsSession(foundationProgress);
         }
 
-        // Stage 2: Core Radicals
-        if (currentStage === 'core_radicals' && !this.isCoreRadicalsComplete(unifiedProgress)) {
-            return this.buildRadicalsSession(unifiedProgress, settings);
+        // Stage 2: Heisig Kanji - MUST learn minimum kanji before vocabulary
+        // This enforces the Heisig methodology: learn kanji meanings first
+        if (heisigCount < this.MIN_HEISIG_FOR_VOCAB) {
+            return this.buildHeisigSession(unifiedProgress, settings, heisigCount);
         }
 
-        // Stage 3+: Mixed vocabulary/kanji/grammar session
+        // Stage 3+: Mixed vocabulary/kanji/grammar session (only after 50+ Heisig kanji)
         return this.buildMixedSession(vocabulary, progress, settings, unifiedProgress, stageProgress);
     },
 
     // Check if KANA ONLY is complete (both hiragana AND katakana at 100%)
     isKanaMasteryComplete(foundationProgress) {
-        if (!foundationProgress) return false;
-        const hiraganaScore = foundationProgress.kana?.hiraganaScore || 0;
-        const katakanaScore = foundationProgress.kana?.katakanaScore || 0;
-        return hiraganaScore >= 100 && katakanaScore >= 100;
+        // Use the new individual kana mastery tracking system
+        const kanaMastery = Storage.getKanaMastery();
+        return kanaMastery.hiraganaComplete && kanaMastery.katakanaComplete;
     },
 
-    // Check if foundations stage is complete (kana mastery unlocks everything else)
+    // Check if foundations stage is complete (kana mastery only - no grammar/kanji intro required)
     isFoundationsComplete(foundationProgress) {
-        if (!foundationProgress) return false;
-
-        // Kana mastery is the gateway - BOTH must be 100%
-        const kanaComplete = this.isKanaMasteryComplete(foundationProgress);
-
-        // Grammar and kanji intro only count AFTER kana is complete
-        if (!kanaComplete) return false;
-
-        const grammarComplete = foundationProgress.grammarIntro?.completed;
-        const kanjiIntroComplete = foundationProgress.kanjiIntro?.completed;
-
-        return kanaComplete && grammarComplete && kanjiIntroComplete;
+        // Now just checks kana mastery since that's stage 1
+        return this.isKanaMasteryComplete(foundationProgress);
     },
 
-    // Check if core radicals stage is complete
-    isCoreRadicalsComplete(unifiedProgress) {
-        const learnedCount = Storage.getLearnedRadicalsCount();
-        return learnedCount >= 50;
+    // Check if Heisig kanji stage is complete (300 kanji milestone)
+    isHeisigComplete(unifiedProgress) {
+        const learnedCount = this.getLearnedHeisigCount(unifiedProgress);
+        return learnedCount >= 300;
+    },
+
+    // Get count of Heisig kanji learned
+    getLearnedHeisigCount(unifiedProgress) {
+        if (!unifiedProgress) {
+            unifiedProgress = Storage.getUnifiedProgress();
+        }
+
+        let count = 0;
+        Object.entries(unifiedProgress).forEach(([key, data]) => {
+            if (key.startsWith('heisig_') && (data.stack === 'learning' || data.stack === 'known')) {
+                count++;
+            }
+        });
+        return count;
     },
 
     // Build foundations learning session
@@ -117,45 +126,47 @@ const SmartQueue = {
         return session;
     },
 
-    // Build radicals learning session
-    buildRadicalsSession(unifiedProgress, settings) {
+    // Build Heisig kanji learning session (primitives first, then compounds)
+    buildHeisigSession(unifiedProgress, settings, currentHeisigCount = 0) {
         const session = {
-            type: 'radicals',
-            items: []
+            type: 'heisig',
+            items: [],
+            heisigCount: currentHeisigCount,
+            vocabUnlockAt: this.MIN_HEISIG_FOR_VOCAB
         };
 
-        // Get priority radicals that aren't learned yet
-        if (typeof PRIORITY_RADICALS !== 'undefined') {
-            const unlearnedRadicals = PRIORITY_RADICALS.getSorted().filter(radical => {
-                const progress = unifiedProgress[`radical_${radical.char}`];
+        // Get Heisig kanji in book order from HEISIG_DATA
+        if (typeof HEISIG_DATA !== 'undefined') {
+            const allHeisig = HEISIG_DATA.kanji || [];
+
+            // Get unlearned kanji (maintaining book order - this is CRITICAL for Heisig method)
+            const unlearnedHeisig = allHeisig.filter(kanji => {
+                const progress = unifiedProgress[`heisig_${kanji.kanji}`];
                 return !progress || progress.stack === 'unlearned';
             });
 
-            // Also get radicals that are due for review
-            const dueRadicals = PRIORITY_RADICALS.getAll().filter(radical => {
-                const progress = unifiedProgress[`radical_${radical.char}`];
+            // Get kanji that are due for review
+            const dueReviews = allHeisig.filter(kanji => {
+                const progress = unifiedProgress[`heisig_${kanji.kanji}`];
                 return progress && progress.stack === 'learning' &&
                     progress.nextReview && new Date(progress.nextReview) <= new Date();
             });
 
             // Add due reviews first
-            dueRadicals.forEach(radical => {
+            dueReviews.forEach(kanji => {
                 session.items.push({
-                    type: 'radical_review',
-                    ...radical,
-                    progress: unifiedProgress[`radical_${radical.char}`]
+                    type: 'heisig_review',
+                    ...kanji,
+                    progress: unifiedProgress[`heisig_${kanji.kanji}`]
                 });
             });
 
-            // Add new radicals
-            const newCount = Math.min(settings.dailyNewWords || 5, unlearnedRadicals.length);
-            unlearnedRadicals.slice(0, newCount).forEach(radical => {
-                // Get full radical data from RADICALS_DATA
-                const fullData = RADICALS_DATA?.radicals.find(r => r.char === radical.char);
+            // Add new kanji in book order (primitives come first in Heisig order)
+            const newCount = Math.min(settings.dailyNewWords || 5, unlearnedHeisig.length);
+            unlearnedHeisig.slice(0, newCount).forEach(kanji => {
                 session.items.push({
-                    type: 'radical_new',
-                    ...radical,
-                    ...(fullData || {}),
+                    type: 'heisig_new',
+                    ...kanji,
                     isNew: true
                 });
             });
@@ -355,9 +366,9 @@ const SmartQueue = {
             currentStage: stageProgress.currentStage,
             dueReviews: dueReviews.length,
             newAvailable: learnableVocab.length,
-            radicalsLearned: Storage.getLearnedRadicalsCount(),
-            foundationsComplete: this.isFoundationsComplete(foundationProgress),
-            radicalsComplete: this.isCoreRadicalsComplete(unifiedProgress)
+            heisigLearned: this.getLearnedHeisigCount(unifiedProgress),
+            kanaMasteryComplete: this.isKanaMasteryComplete(foundationProgress),
+            heisigComplete: this.isHeisigComplete(unifiedProgress)
         };
     }
 };
