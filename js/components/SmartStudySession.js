@@ -13,6 +13,13 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
     const [expandedKanji, setExpandedKanji] = useState(null);
     const [sessionStats, setSessionStats] = useState({ studied: 0, reviews: 0 });
     const [showKanaQuiz, setShowKanaQuiz] = useState(false);
+    const [showDebugControls, setShowDebugControls] = useState(false);
+    const [kanaMastery, setKanaMastery] = useState(Storage.getKanaMastery());
+
+    // Refresh kana mastery when quiz completes
+    const refreshKanaMastery = useCallback(() => {
+        setKanaMastery(Storage.getKanaMastery());
+    }, []);
 
     // Build smart session on mount
     useEffect(() => {
@@ -192,19 +199,74 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
         }
     };
 
-    // Kana practice card - shows progress and emphasizes both must be 100%
+    // Kana practice card - shows real-time progress with individual character tracking
     const renderKanaPracticeCard = () => {
-        const hiraganaScore = currentItem.hiraganaScore || 0;
-        const katakanaScore = currentItem.katakanaScore || 0;
+        // Use live kanaMastery state (updates after quiz)
+        const hiraganaCount = kanaMastery.hiraganaCount;
+        const katakanaCount = kanaMastery.katakanaCount;
+        const hiraganaPercent = kanaMastery.hiraganaPercent;
+        const katakanaPercent = kanaMastery.katakanaPercent;
+
+        // Hiragana and katakana data for debug buttons
+        const hiraganaChars = ['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'];
+        const katakanaChars = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン'];
 
         return (
             <div className="study-card study-card-large">
+                {/* Debug controls in top-right corner */}
+                <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                    <button
+                        className="btn btn-ghost"
+                        onClick={() => setShowDebugControls(!showDebugControls)}
+                        style={{ padding: '4px 8px', fontSize: '0.625rem', opacity: 0.5 }}
+                    >
+                        🛠
+                    </button>
+                    {showDebugControls && (
+                        <div style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: '100%',
+                            background: 'white',
+                            border: '1px solid var(--color-sand)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: 'var(--space-sm)',
+                            zIndex: 100,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 'var(--space-xs)',
+                            minWidth: '140px'
+                        }}>
+                            <button
+                                className="btn btn-ghost"
+                                style={{ fontSize: '0.6875rem', padding: '4px 8px', justifyContent: 'flex-start' }}
+                                onClick={() => {
+                                    Storage.resetKanaProgress();
+                                    refreshKanaMastery();
+                                }}
+                            >
+                                Reset All Kana
+                            </button>
+                            <button
+                                className="btn btn-ghost"
+                                style={{ fontSize: '0.6875rem', padding: '4px 8px', justifyContent: 'flex-start' }}
+                                onClick={() => {
+                                    Storage.masterAllKana(hiraganaChars, katakanaChars);
+                                    refreshKanaMastery();
+                                }}
+                            >
+                                Master All Kana
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 <div className="card-type-badge">Stage 1: Kana Mastery</div>
                 <div className="kana-practice-content">
                     <h3 style={{ marginBottom: 'var(--space-lg)' }}>Master Your Kana First</h3>
                     <p style={{ marginBottom: 'var(--space-lg)', color: 'var(--color-text-secondary)' }}>
-                        Before learning vocabulary and kanji, you must master the Japanese alphabets.
-                        Both hiragana AND katakana must reach 100%.
+                        Answer each character correctly at least once.
+                        Both hiragana AND katakana must be 100% to unlock vocabulary.
                     </p>
 
                     <div className="kana-progress-grid" style={{
@@ -214,37 +276,43 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                         marginBottom: 'var(--space-xl)'
                     }}>
                         <div className="kana-progress-item" style={{
-                            background: hiraganaScore >= 100 ? 'var(--color-success-light)' : 'var(--color-bg-warm)',
+                            background: hiraganaPercent >= 100 ? 'var(--color-success-light)' : 'var(--color-bg-warm)',
                             padding: 'var(--space-lg)',
                             borderRadius: 'var(--radius-md)',
                             textAlign: 'center'
                         }}>
                             <div style={{ fontSize: '2rem', marginBottom: 'var(--space-sm)' }}>
-                                {hiraganaScore >= 100 ? '✅' : 'あ'}
+                                {hiraganaPercent >= 100 ? '✅' : 'あ'}
                             </div>
                             <div style={{ fontWeight: '600' }}>Hiragana</div>
                             <div style={{
-                                fontSize: '1.5rem',
-                                color: hiraganaScore >= 100 ? 'var(--color-success)' : 'var(--color-text)'
+                                fontSize: '1.25rem',
+                                color: hiraganaPercent >= 100 ? 'var(--color-success)' : 'var(--color-text)'
                             }}>
-                                {hiraganaScore}%
+                                {hiraganaCount} / 46
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                {hiraganaPercent}%
                             </div>
                         </div>
                         <div className="kana-progress-item" style={{
-                            background: katakanaScore >= 100 ? 'var(--color-success-light)' : 'var(--color-bg-warm)',
+                            background: katakanaPercent >= 100 ? 'var(--color-success-light)' : 'var(--color-bg-warm)',
                             padding: 'var(--space-lg)',
                             borderRadius: 'var(--radius-md)',
                             textAlign: 'center'
                         }}>
                             <div style={{ fontSize: '2rem', marginBottom: 'var(--space-sm)' }}>
-                                {katakanaScore >= 100 ? '✅' : 'ア'}
+                                {katakanaPercent >= 100 ? '✅' : 'ア'}
                             </div>
                             <div style={{ fontWeight: '600' }}>Katakana</div>
                             <div style={{
-                                fontSize: '1.5rem',
-                                color: katakanaScore >= 100 ? 'var(--color-success)' : 'var(--color-text)'
+                                fontSize: '1.25rem',
+                                color: katakanaPercent >= 100 ? 'var(--color-success)' : 'var(--color-text)'
                             }}>
-                                {katakanaScore}%
+                                {katakanaCount} / 46
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                {katakanaPercent}%
                             </div>
                         </div>
                     </div>
@@ -536,6 +604,8 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
             <KanaQuiz
                 onComplete={() => {
                     setShowKanaQuiz(false);
+                    // Refresh kana mastery state immediately
+                    refreshKanaMastery();
                     // Refresh session after completing kana quiz
                     const stageProgress = Storage.getStageProgress();
                     const foundationProgress = Storage.getFoundationProgress();
@@ -545,7 +615,11 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                     setSession(smartSession);
                     setCurrentIndex(0);
                 }}
-                onExit={() => setShowKanaQuiz(false)}
+                onExit={() => {
+                    setShowKanaQuiz(false);
+                    // Also refresh on exit (in case quiz was partially completed)
+                    refreshKanaMastery();
+                }}
             />
         );
     }
@@ -568,24 +642,28 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                 </div>
             </div>
 
-            {/* Card with navigation */}
+            {/* Card with navigation - only show arrows if multiple items */}
             <div className="study-card-wrapper">
-                <button
-                    className="nav-arrow nav-arrow-left"
-                    onClick={handlePrevious}
-                    disabled={currentIndex === 0}
-                >
-                    ←
-                </button>
+                {session.items.length > 1 && (
+                    <button
+                        className="nav-arrow nav-arrow-left"
+                        onClick={handlePrevious}
+                        disabled={currentIndex === 0}
+                    >
+                        ←
+                    </button>
+                )}
 
                 {renderCard()}
 
-                <button
-                    className="nav-arrow nav-arrow-right"
-                    onClick={handleNext}
-                >
-                    →
-                </button>
+                {session.items.length > 1 && (
+                    <button
+                        className="nav-arrow nav-arrow-right"
+                        onClick={handleNext}
+                    >
+                        →
+                    </button>
+                )}
             </div>
         </div>
     );

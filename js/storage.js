@@ -50,8 +50,11 @@ const DEFAULT_STAGE_PROGRESS = {
 // Default foundation progress
 const DEFAULT_FOUNDATION_PROGRESS = {
     kana: {
-        hiraganaScore: 0,
-        katakanaScore: 0,
+        // Individual kana mastery tracking
+        masteredHiragana: [],  // Array of kana chars answered correctly
+        masteredKatakana: [],  // Array of kana chars answered correctly
+        hiraganaScore: 0,      // Percentage (calculated from mastered count)
+        katakanaScore: 0,      // Percentage (calculated from mastered count)
         lastQuizDate: null
     },
     grammarIntro: {
@@ -63,6 +66,10 @@ const DEFAULT_FOUNDATION_PROGRESS = {
         completed: false
     }
 };
+
+// Total kana counts
+const HIRAGANA_COUNT = 46;
+const KATAKANA_COUNT = 46;
 
 // Default stats
 const DEFAULT_STATS = {
@@ -409,15 +416,113 @@ const Storage = {
         return this.set(STORAGE_KEYS.FOUNDATION_PROGRESS, progress);
     },
 
-    // Update kana score
+    // Update kana score (legacy - for backwards compatibility)
     updateKanaScore(type, score) {
         const progress = this.getFoundationProgress();
         if (type === 'hiragana') {
-            progress.kana.hiraganaScore = Math.max(progress.kana.hiraganaScore, score);
+            progress.kana.hiraganaScore = Math.max(progress.kana.hiraganaScore || 0, score);
         } else if (type === 'katakana') {
-            progress.kana.katakanaScore = Math.max(progress.kana.katakanaScore, score);
+            progress.kana.katakanaScore = Math.max(progress.kana.katakanaScore || 0, score);
         }
         progress.kana.lastQuizDate = new Date().toISOString();
+        return this.saveFoundationProgress(progress);
+    },
+
+    // Mark individual kana as mastered
+    masterKana(kanaChar, type) {
+        const progress = this.getFoundationProgress();
+
+        // Initialize arrays if needed
+        if (!progress.kana.masteredHiragana) progress.kana.masteredHiragana = [];
+        if (!progress.kana.masteredKatakana) progress.kana.masteredKatakana = [];
+
+        if (type === 'hiragana') {
+            if (!progress.kana.masteredHiragana.includes(kanaChar)) {
+                progress.kana.masteredHiragana.push(kanaChar);
+            }
+            // Calculate percentage based on mastered count
+            progress.kana.hiraganaScore = Math.round((progress.kana.masteredHiragana.length / HIRAGANA_COUNT) * 100);
+        } else if (type === 'katakana') {
+            if (!progress.kana.masteredKatakana.includes(kanaChar)) {
+                progress.kana.masteredKatakana.push(kanaChar);
+            }
+            progress.kana.katakanaScore = Math.round((progress.kana.masteredKatakana.length / KATAKANA_COUNT) * 100);
+        }
+
+        progress.kana.lastQuizDate = new Date().toISOString();
+        return this.saveFoundationProgress(progress);
+    },
+
+    // Mark multiple kana as mastered at once
+    masterKanaBatch(kanaChars, type) {
+        const progress = this.getFoundationProgress();
+
+        // Initialize arrays if needed
+        if (!progress.kana.masteredHiragana) progress.kana.masteredHiragana = [];
+        if (!progress.kana.masteredKatakana) progress.kana.masteredKatakana = [];
+
+        kanaChars.forEach(kanaChar => {
+            if (type === 'hiragana') {
+                if (!progress.kana.masteredHiragana.includes(kanaChar)) {
+                    progress.kana.masteredHiragana.push(kanaChar);
+                }
+            } else if (type === 'katakana') {
+                if (!progress.kana.masteredKatakana.includes(kanaChar)) {
+                    progress.kana.masteredKatakana.push(kanaChar);
+                }
+            }
+        });
+
+        // Calculate percentages
+        progress.kana.hiraganaScore = Math.round((progress.kana.masteredHiragana.length / HIRAGANA_COUNT) * 100);
+        progress.kana.katakanaScore = Math.round((progress.kana.masteredKatakana.length / KATAKANA_COUNT) * 100);
+        progress.kana.lastQuizDate = new Date().toISOString();
+
+        return this.saveFoundationProgress(progress);
+    },
+
+    // Get kana mastery status
+    getKanaMastery() {
+        const progress = this.getFoundationProgress();
+        const masteredHiragana = progress.kana?.masteredHiragana || [];
+        const masteredKatakana = progress.kana?.masteredKatakana || [];
+
+        return {
+            masteredHiragana,
+            masteredKatakana,
+            hiraganaCount: masteredHiragana.length,
+            katakanaCount: masteredKatakana.length,
+            hiraganaPercent: Math.round((masteredHiragana.length / HIRAGANA_COUNT) * 100),
+            katakanaPercent: Math.round((masteredKatakana.length / KATAKANA_COUNT) * 100),
+            hiraganaComplete: masteredHiragana.length >= HIRAGANA_COUNT,
+            katakanaComplete: masteredKatakana.length >= KATAKANA_COUNT,
+            totalComplete: masteredHiragana.length >= HIRAGANA_COUNT && masteredKatakana.length >= KATAKANA_COUNT
+        };
+    },
+
+    // Reset all kana progress (for testing)
+    resetKanaProgress() {
+        const progress = this.getFoundationProgress();
+        progress.kana = {
+            masteredHiragana: [],
+            masteredKatakana: [],
+            hiraganaScore: 0,
+            katakanaScore: 0,
+            lastQuizDate: null
+        };
+        return this.saveFoundationProgress(progress);
+    },
+
+    // Master all kana (for testing)
+    masterAllKana(hiraganaChars, katakanaChars) {
+        const progress = this.getFoundationProgress();
+        progress.kana = {
+            masteredHiragana: [...hiraganaChars],
+            masteredKatakana: [...katakanaChars],
+            hiraganaScore: 100,
+            katakanaScore: 100,
+            lastQuizDate: new Date().toISOString()
+        };
         return this.saveFoundationProgress(progress);
     },
 

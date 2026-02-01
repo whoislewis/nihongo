@@ -35,14 +35,19 @@ const StageManager = {
         }
     },
 
-    // Check foundations completion
+    // Check foundations completion - uses new individual kana mastery
     isFoundationsComplete(foundationProgress) {
         if (!foundationProgress) {
             foundationProgress = Storage.getFoundationProgress();
         }
 
-        const kanaComplete = (foundationProgress.kana?.hiraganaScore >= 90 ||
-            foundationProgress.kana?.katakanaScore >= 90);
+        // Use new kana mastery system - both must be 100%
+        const kanaMastery = Storage.getKanaMastery();
+        const kanaComplete = kanaMastery.hiraganaComplete && kanaMastery.katakanaComplete;
+
+        // Grammar and kanji intro only count AFTER kana is complete
+        if (!kanaComplete) return false;
+
         const grammarComplete = foundationProgress.grammarIntro?.completed;
         const kanjiIntroComplete = foundationProgress.kanjiIntro?.completed;
 
@@ -183,27 +188,36 @@ const StageManager = {
         }
     },
 
-    // Get detailed foundations progress
+    // Get detailed foundations progress - uses new individual kana mastery
     getFoundationsProgress(foundationProgress) {
         if (!foundationProgress) {
             foundationProgress = Storage.getFoundationProgress();
         }
 
-        const kanaScore = Math.max(
-            foundationProgress.kana?.hiraganaScore || 0,
-            foundationProgress.kana?.katakanaScore || 0
-        );
+        // Use new kana mastery system
+        const kanaMastery = Storage.getKanaMastery();
         const grammarViewed = foundationProgress.grammarIntro?.viewedCards?.length || 0;
         const kanjiViewed = foundationProgress.kanjiIntro?.viewedCards?.length || 0;
 
-        // Calculate overall progress (weighted)
-        const kanaProgress = Math.min(kanaScore, 100) / 100;  // 0-1
-        const grammarProgress = grammarViewed / 6;  // 0-1
-        const kanjiProgress = kanjiViewed / 6;  // 0-1
+        // Calculate kana progress (both must be 100%)
+        const hiraganaProgress = kanaMastery.hiraganaPercent / 100;  // 0-1
+        const katakanaProgress = kanaMastery.katakanaPercent / 100;  // 0-1
+        const kanaProgress = (hiraganaProgress + katakanaProgress) / 2;  // Average
 
-        const overallPercent = Math.round(
-            ((kanaProgress * 40) + (grammarProgress * 30) + (kanjiProgress * 30))
-        );
+        // Kana is 60% of foundations, grammar and kanji intro split remaining 40%
+        // But only count grammar/kanji if kana is complete
+        let overallPercent;
+        if (!kanaMastery.totalComplete) {
+            // Kana not complete - show just kana progress (scaled to 60%)
+            overallPercent = Math.round(kanaProgress * 60);
+        } else {
+            // Kana complete - include grammar and kanji intro
+            const grammarProgress = grammarViewed / 6;  // 0-1
+            const kanjiProgress = kanjiViewed / 6;  // 0-1
+            overallPercent = Math.round(
+                60 + (grammarProgress * 20) + (kanjiProgress * 20)
+            );
+        }
 
         return {
             percent: overallPercent,
@@ -211,8 +225,11 @@ const StageManager = {
             target: 100,
             details: {
                 kana: {
-                    score: kanaScore,
-                    complete: kanaScore >= 90
+                    hiraganaCount: kanaMastery.hiraganaCount,
+                    katakanaCount: kanaMastery.katakanaCount,
+                    hiraganaPercent: kanaMastery.hiraganaPercent,
+                    katakanaPercent: kanaMastery.katakanaPercent,
+                    complete: kanaMastery.totalComplete
                 },
                 grammar: {
                     viewed: grammarViewed,
@@ -309,8 +326,20 @@ const StageManager = {
         switch (currentStageId) {
             case 'foundations':
                 const foundDetails = stageProgress.details;
+                // Check kana first (both must be 100%)
                 if (!foundDetails.kana.complete) {
-                    return { text: 'Complete kana quiz with 90%+', type: 'kana' };
+                    const hiraganaRemaining = 46 - foundDetails.kana.hiraganaCount;
+                    const katakanaRemaining = 46 - foundDetails.kana.katakanaCount;
+                    if (hiraganaRemaining > 0 && katakanaRemaining > 0) {
+                        return {
+                            text: `Master ${hiraganaRemaining} hiragana + ${katakanaRemaining} katakana`,
+                            type: 'kana'
+                        };
+                    } else if (hiraganaRemaining > 0) {
+                        return { text: `Master ${hiraganaRemaining} more hiragana`, type: 'kana' };
+                    } else {
+                        return { text: `Master ${katakanaRemaining} more katakana`, type: 'kana' };
+                    }
                 }
                 if (!foundDetails.grammar.complete) {
                     return { text: `View ${6 - foundDetails.grammar.viewed} more grammar cards`, type: 'grammar' };

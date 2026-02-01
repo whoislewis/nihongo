@@ -1,24 +1,24 @@
 // Kana Quiz Component
-// Interactive quiz to test hiragana and katakana recognition
+// Tracks individual kana mastery - each of 46 hiragana/katakana must be answered correctly
 // Keyboard-first design for speed learning
 
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 const KanaQuiz = ({ onComplete, onExit }) => {
-    const [quizType, setQuizType] = useState('hiragana'); // 'hiragana', 'katakana', 'both'
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [score, setScore] = useState(0);
-    const [answered, setAnswered] = useState(false);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
+    const [quizType, setQuizType] = useState('hiragana'); // 'hiragana', 'katakana'
     const [quizStarted, setQuizStarted] = useState(false);
     const [quizComplete, setQuizComplete] = useState(false);
-    const [wrongAnswers, setWrongAnswers] = useState([]);
-    const [answers, setAnswers] = useState([]); // Track all answers for navigation
+
+    // Current question state
+    const [currentQuestion, setCurrentQuestion] = useState(null);
+    const [answered, setAnswered] = useState(false);
+    const [selectedAnswer, setSelectedAnswer] = useState(null);
+    const [sessionMastered, setSessionMastered] = useState([]); // Kana mastered THIS session
+    const [sessionWrong, setSessionWrong] = useState([]); // Wrong answers for review
+
     const autoAdvanceRef = useRef(null);
 
-    const QUIZ_LENGTH = 20;
-
-    // Kana data
+    // Kana data - 46 basic hiragana
     const hiraganaData = [
         { kana: 'あ', romaji: 'a' }, { kana: 'い', romaji: 'i' }, { kana: 'う', romaji: 'u' }, { kana: 'え', romaji: 'e' }, { kana: 'お', romaji: 'o' },
         { kana: 'か', romaji: 'ka' }, { kana: 'き', romaji: 'ki' }, { kana: 'く', romaji: 'ku' }, { kana: 'け', romaji: 'ke' }, { kana: 'こ', romaji: 'ko' },
@@ -30,12 +30,6 @@ const KanaQuiz = ({ onComplete, onExit }) => {
         { kana: 'や', romaji: 'ya' }, { kana: 'ゆ', romaji: 'yu' }, { kana: 'よ', romaji: 'yo' },
         { kana: 'ら', romaji: 'ra' }, { kana: 'り', romaji: 'ri' }, { kana: 'る', romaji: 'ru' }, { kana: 'れ', romaji: 're' }, { kana: 'ろ', romaji: 'ro' },
         { kana: 'わ', romaji: 'wa' }, { kana: 'を', romaji: 'wo' }, { kana: 'ん', romaji: 'n' },
-        // Dakuten
-        { kana: 'が', romaji: 'ga' }, { kana: 'ぎ', romaji: 'gi' }, { kana: 'ぐ', romaji: 'gu' }, { kana: 'げ', romaji: 'ge' }, { kana: 'ご', romaji: 'go' },
-        { kana: 'ざ', romaji: 'za' }, { kana: 'じ', romaji: 'ji' }, { kana: 'ず', romaji: 'zu' }, { kana: 'ぜ', romaji: 'ze' }, { kana: 'ぞ', romaji: 'zo' },
-        { kana: 'だ', romaji: 'da' }, { kana: 'ぢ', romaji: 'ji' }, { kana: 'づ', romaji: 'zu' }, { kana: 'で', romaji: 'de' }, { kana: 'ど', romaji: 'do' },
-        { kana: 'ば', romaji: 'ba' }, { kana: 'び', romaji: 'bi' }, { kana: 'ぶ', romaji: 'bu' }, { kana: 'べ', romaji: 'be' }, { kana: 'ぼ', romaji: 'bo' },
-        { kana: 'ぱ', romaji: 'pa' }, { kana: 'ぴ', romaji: 'pi' }, { kana: 'ぷ', romaji: 'pu' }, { kana: 'ぺ', romaji: 'pe' }, { kana: 'ぽ', romaji: 'po' },
     ];
 
     const katakanaData = [
@@ -49,74 +43,105 @@ const KanaQuiz = ({ onComplete, onExit }) => {
         { kana: 'ヤ', romaji: 'ya' }, { kana: 'ユ', romaji: 'yu' }, { kana: 'ヨ', romaji: 'yo' },
         { kana: 'ラ', romaji: 'ra' }, { kana: 'リ', romaji: 'ri' }, { kana: 'ル', romaji: 'ru' }, { kana: 'レ', romaji: 're' }, { kana: 'ロ', romaji: 'ro' },
         { kana: 'ワ', romaji: 'wa' }, { kana: 'ヲ', romaji: 'wo' }, { kana: 'ン', romaji: 'n' },
-        // Dakuten
-        { kana: 'ガ', romaji: 'ga' }, { kana: 'ギ', romaji: 'gi' }, { kana: 'グ', romaji: 'gu' }, { kana: 'ゲ', romaji: 'ge' }, { kana: 'ゴ', romaji: 'go' },
-        { kana: 'ザ', romaji: 'za' }, { kana: 'ジ', romaji: 'ji' }, { kana: 'ズ', romaji: 'zu' }, { kana: 'ゼ', romaji: 'ze' }, { kana: 'ゾ', romaji: 'zo' },
-        { kana: 'ダ', romaji: 'da' }, { kana: 'ヂ', romaji: 'ji' }, { kana: 'ヅ', romaji: 'zu' }, { kana: 'デ', romaji: 'de' }, { kana: 'ド', romaji: 'do' },
-        { kana: 'バ', romaji: 'ba' }, { kana: 'ビ', romaji: 'bi' }, { kana: 'ブ', romaji: 'bu' }, { kana: 'ベ', romaji: 'be' }, { kana: 'ボ', romaji: 'bo' },
-        { kana: 'パ', romaji: 'pa' }, { kana: 'ピ', romaji: 'pi' }, { kana: 'プ', romaji: 'pu' }, { kana: 'ペ', romaji: 'pe' }, { kana: 'ポ', romaji: 'po' },
     ];
 
-    // Generate quiz questions
-    const questions = useMemo(() => {
-        let pool = [];
-        if (quizType === 'hiragana') pool = hiraganaData;
-        else if (quizType === 'katakana') pool = katakanaData;
-        else pool = [...hiraganaData, ...katakanaData];
+    const TOTAL_KANA = 46;
 
-        // Shuffle and pick QUIZ_LENGTH questions
-        const shuffled = [...pool].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, QUIZ_LENGTH).map(item => {
-            // Generate 4 options including the correct answer
-            const otherOptions = pool
-                .filter(k => k.romaji !== item.romaji)
-                .sort(() => Math.random() - 0.5)
-                .slice(0, 3)
-                .map(k => k.romaji);
+    // Get current kana data based on quiz type
+    const kanaPool = quizType === 'hiragana' ? hiraganaData : katakanaData;
 
-            const options = [...otherOptions, item.romaji].sort(() => Math.random() - 0.5);
+    // Get already mastered kana from storage
+    const getMasteredKana = useCallback(() => {
+        const mastery = Storage.getKanaMastery();
+        return quizType === 'hiragana' ? mastery.masteredHiragana : mastery.masteredKatakana;
+    }, [quizType]);
 
-            return {
-                ...item,
-                options
-            };
-        });
-    }, [quizType, quizStarted]);
+    // Get unmastered kana (not yet answered correctly)
+    const getUnmasteredKana = useCallback(() => {
+        const mastered = getMasteredKana();
+        return kanaPool.filter(k => !mastered.includes(k.kana));
+    }, [kanaPool, getMasteredKana]);
 
-    const currentQuestion = questions[currentIndex];
+    // Generate next question from unmastered kana
+    const generateNextQuestion = useCallback(() => {
+        const unmastered = getUnmasteredKana();
+
+        if (unmastered.length === 0) {
+            // All mastered!
+            setQuizComplete(true);
+            return null;
+        }
+
+        // Pick random unmastered kana
+        const item = unmastered[Math.floor(Math.random() * unmastered.length)];
+
+        // Generate 4 options including correct answer
+        const otherOptions = kanaPool
+            .filter(k => k.romaji !== item.romaji)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 3)
+            .map(k => k.romaji);
+
+        const options = [...otherOptions, item.romaji].sort(() => Math.random() - 0.5);
+
+        return { ...item, options };
+    }, [getUnmasteredKana, kanaPool]);
+
+    // Start quiz - generate first question
+    const startQuiz = useCallback(() => {
+        setQuizStarted(true);
+        setSessionMastered([]);
+        setSessionWrong([]);
+        setCurrentQuestion(generateNextQuestion());
+        setAnswered(false);
+        setSelectedAnswer(null);
+    }, [generateNextQuestion]);
 
     // Handle answer selection
     const handleAnswer = useCallback((answer) => {
-        if (answered) return;
+        if (answered || !currentQuestion) return;
 
-        const isCorrect = answer === currentQuestion?.romaji;
+        const isCorrect = answer === currentQuestion.romaji;
 
         setSelectedAnswer(answer);
         setAnswered(true);
 
-        // Track this answer
-        setAnswers(prev => {
-            const newAnswers = [...prev];
-            newAnswers[currentIndex] = { answer, isCorrect };
-            return newAnswers;
-        });
-
         if (isCorrect) {
-            setScore(prev => prev + 1);
-            // Auto-advance after 0.8 seconds for correct answers
+            // Mark this kana as mastered
+            Storage.masterKana(currentQuestion.kana, quizType);
+            setSessionMastered(prev => [...prev, currentQuestion.kana]);
+
+            // Auto-advance after 0.6 seconds for correct answers
             autoAdvanceRef.current = setTimeout(() => {
                 handleNext();
-            }, 800);
+            }, 600);
         } else {
-            setWrongAnswers(prev => [...prev, {
+            setSessionWrong(prev => [...prev, {
                 kana: currentQuestion.kana,
                 correct: currentQuestion.romaji,
                 selected: answer
             }]);
         }
-    }, [answered, currentQuestion, currentIndex]);
+    }, [answered, currentQuestion, quizType]);
 
-    // Clear auto-advance timeout on unmount or manual navigation
+    // Move to next question
+    const handleNext = useCallback(() => {
+        if (autoAdvanceRef.current) {
+            clearTimeout(autoAdvanceRef.current);
+            autoAdvanceRef.current = null;
+        }
+
+        const nextQ = generateNextQuestion();
+        if (nextQ) {
+            setCurrentQuestion(nextQ);
+            setAnswered(false);
+            setSelectedAnswer(null);
+        } else {
+            setQuizComplete(true);
+        }
+    }, [generateNextQuestion]);
+
+    // Clean up timeout on unmount
     useEffect(() => {
         return () => {
             if (autoAdvanceRef.current) {
@@ -125,63 +150,11 @@ const KanaQuiz = ({ onComplete, onExit }) => {
         };
     }, []);
 
-    // Move to next question
-    const handleNext = useCallback(() => {
-        // Clear any pending auto-advance
-        if (autoAdvanceRef.current) {
-            clearTimeout(autoAdvanceRef.current);
-            autoAdvanceRef.current = null;
-        }
-
-        if (currentIndex < QUIZ_LENGTH - 1) {
-            setCurrentIndex(prev => prev + 1);
-            setAnswered(false);
-            setSelectedAnswer(null);
-        } else {
-            // Quiz complete
-            setQuizComplete(true);
-            const finalScore = Math.round((score / QUIZ_LENGTH) * 100);
-
-            // Save progress if score >= 90%
-            if (finalScore >= 90) {
-                if (quizType === 'both') {
-                    Storage.updateKanaScore('hiragana', finalScore);
-                    Storage.updateKanaScore('katakana', finalScore);
-                } else {
-                    Storage.updateKanaScore(quizType, finalScore);
-                }
-            }
-        }
-    }, [currentIndex, score, quizType]);
-
-    // Move to previous question
-    const handlePrevious = useCallback(() => {
-        if (currentIndex > 0) {
-            // Clear any pending auto-advance
-            if (autoAdvanceRef.current) {
-                clearTimeout(autoAdvanceRef.current);
-                autoAdvanceRef.current = null;
-            }
-
-            setCurrentIndex(prev => prev - 1);
-            // Restore previous answer state
-            const prevAnswer = answers[currentIndex - 1];
-            if (prevAnswer) {
-                setAnswered(true);
-                setSelectedAnswer(prevAnswer.answer);
-            } else {
-                setAnswered(false);
-                setSelectedAnswer(null);
-            }
-        }
-    }, [currentIndex, answers]);
-
     // Keyboard controls
     useEffect(() => {
         if (!quizStarted || quizComplete) return;
 
         const handleKeyDown = (e) => {
-            // ESC to exit
             if (e.key === 'Escape') {
                 e.preventDefault();
                 onExit();
@@ -198,20 +171,7 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                 }
             }
 
-            // Arrow keys for navigation
-            if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                handlePrevious();
-                return;
-            }
-
-            if (e.key === 'ArrowRight' && answered) {
-                e.preventDefault();
-                handleNext();
-                return;
-            }
-
-            // Enter or Space to continue after answering
+            // Enter or Space to continue after wrong answer
             if ((e.key === 'Enter' || e.key === ' ') && answered) {
                 e.preventDefault();
                 handleNext();
@@ -220,7 +180,7 @@ const KanaQuiz = ({ onComplete, onExit }) => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [quizStarted, quizComplete, answered, currentQuestion, handleAnswer, handleNext, handlePrevious, onExit]);
+    }, [quizStarted, quizComplete, answered, currentQuestion, handleAnswer, handleNext, onExit]);
 
     // Play audio
     const playAudio = (text) => {
@@ -233,13 +193,19 @@ const KanaQuiz = ({ onComplete, onExit }) => {
         }
     };
 
+    // Calculate current progress
+    const mastery = Storage.getKanaMastery();
+    const masteredCount = quizType === 'hiragana' ? mastery.hiraganaCount : mastery.katakanaCount;
+    const masteredPercent = quizType === 'hiragana' ? mastery.hiraganaPercent : mastery.katakanaPercent;
+    const remaining = TOTAL_KANA - masteredCount;
+
     // Start screen
     if (!quizStarted) {
         return (
             <div className="kana-quiz-start">
                 <div className="quiz-start-card">
-                    <h2>Kana Quiz</h2>
-                    <p>Test your knowledge of Japanese characters</p>
+                    <h2>Kana Mastery</h2>
+                    <p>Master all 46 characters to unlock vocabulary and grammar</p>
 
                     <div className="quiz-type-selection">
                         <h4>Select Quiz Type</h4>
@@ -250,6 +216,10 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                             >
                                 <span className="japanese">ひらがな</span>
                                 <span>Hiragana</span>
+                                <span className="quiz-type-progress">
+                                    {mastery.hiraganaCount} / 46
+                                    {mastery.hiraganaComplete && ' ✓'}
+                                </span>
                             </button>
                             <button
                                 className={`quiz-type-btn ${quizType === 'katakana' ? 'active' : ''}`}
@@ -257,28 +227,33 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                             >
                                 <span className="japanese">カタカナ</span>
                                 <span>Katakana</span>
-                            </button>
-                            <button
-                                className={`quiz-type-btn ${quizType === 'both' ? 'active' : ''}`}
-                                onClick={() => setQuizType('both')}
-                            >
-                                <span className="japanese">両方</span>
-                                <span>Both</span>
+                                <span className="quiz-type-progress">
+                                    {mastery.katakanaCount} / 46
+                                    {mastery.katakanaComplete && ' ✓'}
+                                </span>
                             </button>
                         </div>
                     </div>
 
                     <div className="quiz-info">
-                        <p>{QUIZ_LENGTH} questions</p>
-                        <p>Score 90% or higher to complete the stage</p>
+                        <p style={{ fontWeight: '500' }}>
+                            {remaining > 0 ? `${remaining} ${quizType} characters remaining` : `All ${quizType} mastered!`}
+                        </p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                            Each character must be answered correctly at least once
+                        </p>
                         <p style={{ marginTop: 'var(--space-md)', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            Keyboard: 1-4 to answer, ← → to navigate, ESC to exit
+                            Keyboard: 1-4 to answer, Enter to continue, ESC to exit
                         </p>
                     </div>
 
                     <div className="quiz-start-actions">
-                        <button className="btn btn-primary btn-large" onClick={() => setQuizStarted(true)}>
-                            Start Quiz
+                        <button
+                            className="btn btn-primary btn-large"
+                            onClick={startQuiz}
+                            disabled={remaining === 0}
+                        >
+                            {remaining > 0 ? 'Start Quiz' : 'All Complete!'}
                         </button>
                         <button className="btn btn-ghost" onClick={onExit}>
                             Back
@@ -289,38 +264,33 @@ const KanaQuiz = ({ onComplete, onExit }) => {
         );
     }
 
-    // Results screen
+    // Quiz complete screen
     if (quizComplete) {
-        const percentage = Math.round((score / QUIZ_LENGTH) * 100);
-        const passed = percentage >= 90;
-
         return (
             <div className="kana-quiz-results">
                 <div className="quiz-results-card">
-                    <div className={`result-icon ${passed ? 'passed' : 'failed'}`}>
-                        {passed ? '🎉' : '📚'}
-                    </div>
-                    <h2>{passed ? 'Congratulations!' : 'Keep Practicing!'}</h2>
+                    <div className="result-icon passed">🎉</div>
+                    <h2>All {quizType} Mastered!</h2>
                     <div className="result-score">
-                        <span className="score-number">{percentage}%</span>
-                        <span className="score-label">{score} / {QUIZ_LENGTH} correct</span>
+                        <span className="score-number">46 / 46</span>
+                        <span className="score-label">Characters Mastered</span>
                     </div>
 
-                    {passed ? (
-                        <p className="result-message success">
-                            You've mastered {quizType === 'both' ? 'hiragana and katakana' : quizType}!
-                        </p>
-                    ) : (
-                        <p className="result-message">
-                            You need 90% to pass. Review the characters below and try again.
-                        </p>
+                    <p className="result-message success">
+                        You've completed {quizType} mastery!
+                    </p>
+
+                    {sessionMastered.length > 0 && (
+                        <div className="session-summary">
+                            <p>This session: {sessionMastered.length} new characters mastered</p>
+                        </div>
                     )}
 
-                    {wrongAnswers.length > 0 && (
+                    {sessionWrong.length > 0 && (
                         <div className="wrong-answers-review">
-                            <h4>Review These Characters</h4>
+                            <h4>Characters to Review</h4>
                             <div className="wrong-answers-grid">
-                                {wrongAnswers.map((item, i) => (
+                                {sessionWrong.map((item, i) => (
                                     <div key={i} className="wrong-answer-item" onClick={() => playAudio(item.kana)}>
                                         <span className="wa-kana japanese">{item.kana}</span>
                                         <span className="wa-correct">{item.correct}</span>
@@ -331,19 +301,19 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                     )}
 
                     <div className="result-actions">
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => {
-                                setQuizStarted(false);
-                                setQuizComplete(false);
-                                setCurrentIndex(0);
-                                setScore(0);
-                                setWrongAnswers([]);
-                            }}
-                        >
-                            Try Again
-                        </button>
-                        <button className="btn btn-ghost" onClick={onExit}>
+                        {!mastery.totalComplete && (
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    setQuizType(quizType === 'hiragana' ? 'katakana' : 'hiragana');
+                                    setQuizStarted(false);
+                                    setQuizComplete(false);
+                                }}
+                            >
+                                Start {quizType === 'hiragana' ? 'Katakana' : 'Hiragana'}
+                            </button>
+                        )}
+                        <button className="btn btn-ghost" onClick={() => onComplete()}>
                             Done
                         </button>
                     </div>
@@ -353,6 +323,8 @@ const KanaQuiz = ({ onComplete, onExit }) => {
     }
 
     // Quiz question screen
+    if (!currentQuestion) return null;
+
     return (
         <div className="kana-quiz">
             <div className="quiz-header">
@@ -360,103 +332,80 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                     ← Exit
                 </button>
                 <div className="quiz-progress">
-                    <span>{currentIndex + 1} / {QUIZ_LENGTH}</span>
+                    <span>{masteredCount} / {TOTAL_KANA} mastered</span>
                     <div className="quiz-progress-bar">
                         <div
                             className="quiz-progress-fill"
-                            style={{ width: `${((currentIndex + 1) / QUIZ_LENGTH) * 100}%` }}
+                            style={{ width: `${masteredPercent}%` }}
                         />
                     </div>
                 </div>
                 <div className="quiz-score">
-                    Score: {score}
+                    +{sessionMastered.length} this session
                 </div>
             </div>
 
-            {/* Quiz card with navigation arrows */}
-            <div className="quiz-card-wrapper">
-                <button
-                    className="nav-arrow nav-arrow-left"
-                    onClick={handlePrevious}
-                    disabled={currentIndex === 0}
-                    title="Previous (←)"
-                >
-                    ←
-                </button>
+            <div className="quiz-card">
+                <div className="quiz-question">
+                    <span
+                        className="quiz-kana japanese"
+                        onClick={() => playAudio(currentQuestion.kana)}
+                    >
+                        {currentQuestion.kana}
+                    </span>
+                    <button className="btn-audio" onClick={() => playAudio(currentQuestion.kana)}>
+                        🔊
+                    </button>
+                </div>
 
-                <div className="quiz-card">
-                    <div className="quiz-question">
-                        <span
-                            className="quiz-kana japanese"
-                            onClick={() => playAudio(currentQuestion.kana)}
-                        >
-                            {currentQuestion.kana}
-                        </span>
-                        <button className="btn-audio" onClick={() => playAudio(currentQuestion.kana)}>
-                            🔊
-                        </button>
-                    </div>
-
-                    <div className="quiz-options">
-                        {currentQuestion.options.map((option, i) => {
-                            let optionClass = 'quiz-option';
-                            if (answered) {
-                                if (option === currentQuestion.romaji) {
-                                    optionClass += ' correct';
-                                } else if (option === selectedAnswer) {
-                                    optionClass += ' incorrect';
-                                }
+                <div className="quiz-options">
+                    {currentQuestion.options.map((option, i) => {
+                        let optionClass = 'quiz-option';
+                        if (answered) {
+                            if (option === currentQuestion.romaji) {
+                                optionClass += ' correct';
+                            } else if (option === selectedAnswer) {
+                                optionClass += ' incorrect';
                             }
+                        }
 
-                            return (
-                                <button
-                                    key={i}
-                                    className={optionClass}
-                                    onClick={() => handleAnswer(option)}
-                                    disabled={answered}
-                                    title={`Press ${i + 1} to select`}
-                                >
-                                    <span className="option-number">{i + 1}</span>
-                                    {option}
-                                </button>
-                            );
-                        })}
-                    </div>
+                        return (
+                            <button
+                                key={i}
+                                className={optionClass}
+                                onClick={() => handleAnswer(option)}
+                                disabled={answered}
+                                title={`Press ${i + 1} to select`}
+                            >
+                                <span className="option-number">{i + 1}</span>
+                                {option}
+                            </button>
+                        );
+                    })}
+                </div>
 
-                    {answered && (
-                        <div className="quiz-feedback">
-                            {selectedAnswer === currentQuestion.romaji ? (
-                                <span className="feedback-correct">Correct! ✓</span>
-                            ) : (
+                {answered && (
+                    <div className="quiz-feedback">
+                        {selectedAnswer === currentQuestion.romaji ? (
+                            <span className="feedback-correct">Correct! ✓</span>
+                        ) : (
+                            <>
                                 <span className="feedback-incorrect">
                                     The answer is <strong>{currentQuestion.romaji}</strong>
                                 </span>
-                            )}
-                            {/* Only show button for wrong answers, correct auto-advances */}
-                            {selectedAnswer !== currentQuestion.romaji && (
                                 <button className="btn btn-primary" onClick={handleNext}>
-                                    {currentIndex < QUIZ_LENGTH - 1 ? 'Next →' : 'See Results'}
+                                    Try Another →
                                 </button>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Keyboard hints */}
-                    <div className="quiz-keyboard-hints">
-                        <span>1-4: Select</span>
-                        <span>← →: Navigate</span>
-                        <span>ESC: Exit</span>
+                            </>
+                        )}
                     </div>
-                </div>
+                )}
 
-                <button
-                    className="nav-arrow nav-arrow-right"
-                    onClick={handleNext}
-                    disabled={!answered}
-                    title="Next (→)"
-                >
-                    →
-                </button>
+                <div className="quiz-keyboard-hints">
+                    <span>1-4: Select</span>
+                    <span>Enter: Continue</span>
+                    <span>ESC: Exit</span>
+                </div>
             </div>
         </div>
     );

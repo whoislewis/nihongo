@@ -6905,6 +6905,26 @@ h3 {
     font-size: 1.25rem;
 }
 
+.quiz-type-progress {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+}
+
+.quiz-type-btn.active .quiz-type-progress {
+    color: var(--color-success);
+    font-weight: 500;
+}
+
+.session-summary {
+    background: var(--color-bg);
+    padding: var(--space-md);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-md);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
 .quiz-info {
     background: var(--color-bg);
     padding: var(--space-md);
