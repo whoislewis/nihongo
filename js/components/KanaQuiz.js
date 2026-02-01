@@ -1,7 +1,8 @@
 // Kana Quiz Component
 // Interactive quiz to test hiragana and katakana recognition
+// Keyboard-first design for speed learning
 
-const { useState, useEffect, useMemo, useCallback } = React;
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 const KanaQuiz = ({ onComplete, onExit }) => {
     const [quizType, setQuizType] = useState('hiragana'); // 'hiragana', 'katakana', 'both'
@@ -12,6 +13,8 @@ const KanaQuiz = ({ onComplete, onExit }) => {
     const [quizStarted, setQuizStarted] = useState(false);
     const [quizComplete, setQuizComplete] = useState(false);
     const [wrongAnswers, setWrongAnswers] = useState([]);
+    const [answers, setAnswers] = useState([]); // Track all answers for navigation
+    const autoAdvanceRef = useRef(null);
 
     const QUIZ_LENGTH = 20;
 
@@ -83,14 +86,27 @@ const KanaQuiz = ({ onComplete, onExit }) => {
     const currentQuestion = questions[currentIndex];
 
     // Handle answer selection
-    const handleAnswer = (answer) => {
+    const handleAnswer = useCallback((answer) => {
         if (answered) return;
+
+        const isCorrect = answer === currentQuestion?.romaji;
 
         setSelectedAnswer(answer);
         setAnswered(true);
 
-        if (answer === currentQuestion.romaji) {
+        // Track this answer
+        setAnswers(prev => {
+            const newAnswers = [...prev];
+            newAnswers[currentIndex] = { answer, isCorrect };
+            return newAnswers;
+        });
+
+        if (isCorrect) {
             setScore(prev => prev + 1);
+            // Auto-advance after 0.8 seconds for correct answers
+            autoAdvanceRef.current = setTimeout(() => {
+                handleNext();
+            }, 800);
         } else {
             setWrongAnswers(prev => [...prev, {
                 kana: currentQuestion.kana,
@@ -98,10 +114,25 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                 selected: answer
             }]);
         }
-    };
+    }, [answered, currentQuestion, currentIndex]);
+
+    // Clear auto-advance timeout on unmount or manual navigation
+    useEffect(() => {
+        return () => {
+            if (autoAdvanceRef.current) {
+                clearTimeout(autoAdvanceRef.current);
+            }
+        };
+    }, []);
 
     // Move to next question
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
+        // Clear any pending auto-advance
+        if (autoAdvanceRef.current) {
+            clearTimeout(autoAdvanceRef.current);
+            autoAdvanceRef.current = null;
+        }
+
         if (currentIndex < QUIZ_LENGTH - 1) {
             setCurrentIndex(prev => prev + 1);
             setAnswered(false);
@@ -121,7 +152,75 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                 }
             }
         }
-    };
+    }, [currentIndex, score, quizType]);
+
+    // Move to previous question
+    const handlePrevious = useCallback(() => {
+        if (currentIndex > 0) {
+            // Clear any pending auto-advance
+            if (autoAdvanceRef.current) {
+                clearTimeout(autoAdvanceRef.current);
+                autoAdvanceRef.current = null;
+            }
+
+            setCurrentIndex(prev => prev - 1);
+            // Restore previous answer state
+            const prevAnswer = answers[currentIndex - 1];
+            if (prevAnswer) {
+                setAnswered(true);
+                setSelectedAnswer(prevAnswer.answer);
+            } else {
+                setAnswered(false);
+                setSelectedAnswer(null);
+            }
+        }
+    }, [currentIndex, answers]);
+
+    // Keyboard controls
+    useEffect(() => {
+        if (!quizStarted || quizComplete) return;
+
+        const handleKeyDown = (e) => {
+            // ESC to exit
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onExit();
+                return;
+            }
+
+            // Number keys 1-4 to select answer
+            if (!answered && currentQuestion) {
+                const num = parseInt(e.key);
+                if (num >= 1 && num <= 4 && currentQuestion.options[num - 1]) {
+                    e.preventDefault();
+                    handleAnswer(currentQuestion.options[num - 1]);
+                    return;
+                }
+            }
+
+            // Arrow keys for navigation
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                handlePrevious();
+                return;
+            }
+
+            if (e.key === 'ArrowRight' && answered) {
+                e.preventDefault();
+                handleNext();
+                return;
+            }
+
+            // Enter or Space to continue after answering
+            if ((e.key === 'Enter' || e.key === ' ') && answered) {
+                e.preventDefault();
+                handleNext();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [quizStarted, quizComplete, answered, currentQuestion, handleAnswer, handleNext, handlePrevious, onExit]);
 
     // Play audio
     const playAudio = (text) => {
@@ -172,6 +271,9 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                     <div className="quiz-info">
                         <p>{QUIZ_LENGTH} questions</p>
                         <p>Score 90% or higher to complete the stage</p>
+                        <p style={{ marginTop: 'var(--space-md)', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            Keyboard: 1-4 to answer, ← → to navigate, ESC to exit
+                        </p>
                     </div>
 
                     <div className="quiz-start-actions">
@@ -254,7 +356,7 @@ const KanaQuiz = ({ onComplete, onExit }) => {
     return (
         <div className="kana-quiz">
             <div className="quiz-header">
-                <button className="btn btn-ghost btn-sm" onClick={onExit}>
+                <button className="btn btn-ghost btn-sm" onClick={onExit} title="Press ESC to exit">
                     ← Exit
                 </button>
                 <div className="quiz-progress">
@@ -271,57 +373,90 @@ const KanaQuiz = ({ onComplete, onExit }) => {
                 </div>
             </div>
 
-            <div className="quiz-card">
-                <div className="quiz-question">
-                    <span
-                        className="quiz-kana japanese"
-                        onClick={() => playAudio(currentQuestion.kana)}
-                    >
-                        {currentQuestion.kana}
-                    </span>
-                    <button className="btn-audio" onClick={() => playAudio(currentQuestion.kana)}>
-                        🔊
-                    </button>
-                </div>
+            {/* Quiz card with navigation arrows */}
+            <div className="quiz-card-wrapper">
+                <button
+                    className="nav-arrow nav-arrow-left"
+                    onClick={handlePrevious}
+                    disabled={currentIndex === 0}
+                    title="Previous (←)"
+                >
+                    ←
+                </button>
 
-                <div className="quiz-options">
-                    {currentQuestion.options.map((option, i) => {
-                        let optionClass = 'quiz-option';
-                        if (answered) {
-                            if (option === currentQuestion.romaji) {
-                                optionClass += ' correct';
-                            } else if (option === selectedAnswer) {
-                                optionClass += ' incorrect';
-                            }
-                        }
-
-                        return (
-                            <button
-                                key={i}
-                                className={optionClass}
-                                onClick={() => handleAnswer(option)}
-                                disabled={answered}
-                            >
-                                {option}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {answered && (
-                    <div className="quiz-feedback">
-                        {selectedAnswer === currentQuestion.romaji ? (
-                            <span className="feedback-correct">Correct!</span>
-                        ) : (
-                            <span className="feedback-incorrect">
-                                The answer is <strong>{currentQuestion.romaji}</strong>
-                            </span>
-                        )}
-                        <button className="btn btn-primary" onClick={handleNext}>
-                            {currentIndex < QUIZ_LENGTH - 1 ? 'Next' : 'See Results'}
+                <div className="quiz-card">
+                    <div className="quiz-question">
+                        <span
+                            className="quiz-kana japanese"
+                            onClick={() => playAudio(currentQuestion.kana)}
+                        >
+                            {currentQuestion.kana}
+                        </span>
+                        <button className="btn-audio" onClick={() => playAudio(currentQuestion.kana)}>
+                            🔊
                         </button>
                     </div>
-                )}
+
+                    <div className="quiz-options">
+                        {currentQuestion.options.map((option, i) => {
+                            let optionClass = 'quiz-option';
+                            if (answered) {
+                                if (option === currentQuestion.romaji) {
+                                    optionClass += ' correct';
+                                } else if (option === selectedAnswer) {
+                                    optionClass += ' incorrect';
+                                }
+                            }
+
+                            return (
+                                <button
+                                    key={i}
+                                    className={optionClass}
+                                    onClick={() => handleAnswer(option)}
+                                    disabled={answered}
+                                    title={`Press ${i + 1} to select`}
+                                >
+                                    <span className="option-number">{i + 1}</span>
+                                    {option}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {answered && (
+                        <div className="quiz-feedback">
+                            {selectedAnswer === currentQuestion.romaji ? (
+                                <span className="feedback-correct">Correct! ✓</span>
+                            ) : (
+                                <span className="feedback-incorrect">
+                                    The answer is <strong>{currentQuestion.romaji}</strong>
+                                </span>
+                            )}
+                            {/* Only show button for wrong answers, correct auto-advances */}
+                            {selectedAnswer !== currentQuestion.romaji && (
+                                <button className="btn btn-primary" onClick={handleNext}>
+                                    {currentIndex < QUIZ_LENGTH - 1 ? 'Next →' : 'See Results'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Keyboard hints */}
+                    <div className="quiz-keyboard-hints">
+                        <span>1-4: Select</span>
+                        <span>← →: Navigate</span>
+                        <span>ESC: Exit</span>
+                    </div>
+                </div>
+
+                <button
+                    className="nav-arrow nav-arrow-right"
+                    onClick={handleNext}
+                    disabled={!answered}
+                    title="Next (→)"
+                >
+                    →
+                </button>
             </div>
         </div>
     );

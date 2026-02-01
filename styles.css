@@ -7001,6 +7001,7 @@ h3 {
 }
 
 .quiz-option {
+    position: relative;
     padding: var(--space-lg);
     font-size: 1.25rem;
     background: var(--color-bg);
@@ -7008,6 +7009,17 @@ h3 {
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-fast);
+}
+
+/* Number label for keyboard shortcut */
+.option-number {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    opacity: 0.6;
 }
 
 .quiz-option:hover:not(:disabled) {
@@ -7049,6 +7061,36 @@ h3 {
     font-size: 1rem;
     color: var(--color-error);
     margin-bottom: var(--space-md);
+}
+
+/* Keyboard hints */
+.quiz-keyboard-hints {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-sand);
+}
+
+.quiz-keyboard-hints span {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
+
+/* Quiz card wrapper for arrows */
+.kana-quiz .quiz-card-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.kana-quiz .quiz-card {
+    flex: 1;
 }
 
 /* Results screen */
