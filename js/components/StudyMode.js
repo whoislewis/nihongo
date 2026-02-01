@@ -10,6 +10,7 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
     const [loadingKanji, setLoadingKanji] = useState(false);
     const [selectedRadical, setSelectedRadical] = useState(null);
     const [expandedKanji, setExpandedKanji] = useState(null);
+    const [hasUnlearnedRadicals, setHasUnlearnedRadicals] = useState(false);
 
     // Build session with new words only
     useEffect(() => {
@@ -24,6 +25,7 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
             setMnemonic(Storage.getMnemonic(word.id));
             setSelectedRadical(null);
             setExpandedKanji(null);
+            setHasUnlearnedRadicals(false);
 
             // Fetch enhanced kanji breakdown data with radicals and related vocab
             setLoadingKanji(true);
@@ -33,9 +35,28 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
             ).then(data => {
                 setKanjiData(data);
                 setLoadingKanji(false);
+
+                // Check for unlearned radicals to auto-expand kanji breakdown
+                if (settings.autoExpandKanji !== false && data.length > 0) {
+                    const unifiedProgress = Storage.getUnifiedProgress();
+                    const hasUnlearned = data.some(k => {
+                        if (k.componentDetails) {
+                            return k.componentDetails.some(comp => {
+                                const radicalProgress = unifiedProgress[`radical_${comp.char}`];
+                                return !radicalProgress || radicalProgress.stack === 'unlearned';
+                            });
+                        }
+                        return false;
+                    });
+                    setHasUnlearnedRadicals(hasUnlearned);
+                    // Auto-expand first kanji if there are unlearned radicals
+                    if (hasUnlearned && data.length > 0) {
+                        setExpandedKanji(0);
+                    }
+                }
             });
         }
-    }, [currentIndex, session, vocabulary]);
+    }, [currentIndex, session, vocabulary, settings]);
 
     const currentWord = session[currentIndex];
 
@@ -190,7 +211,14 @@ const StudyMode = ({ vocabulary, progress, settings, onComplete, onExit }) => {
                     {/* Kanji Breakdown Section - Enhanced with clickable radicals */}
                     {kanjiData.length > 0 && (
                         <div className="kanji-breakdown-section">
-                            <div className="section-label">Kanji Breakdown</div>
+                            <div className="section-label">
+                                Kanji Breakdown
+                                {hasUnlearnedRadicals && (
+                                    <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: 'var(--color-ochre)' }}>
+                                        (contains unlearned radicals)
+                                    </span>
+                                )}
+                            </div>
                             {loadingKanji ? (
                                 <div style={{ textAlign: 'center', padding: 'var(--space-md)', color: 'var(--color-text-muted)' }}>
                                     Loading kanji data...

@@ -5,6 +5,8 @@ const { useState, useEffect, useMemo } = React;
 const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStartQuiz, onRefresh, onNavigateToLibrary }) => {
     const [wordOfDay, setWordOfDay] = useState(null);
     const [didYouKnow, setDidYouKnow] = useState(null);
+    const [showLearningPath, setShowLearningPath] = useState(true);
+    const [stageData, setStageData] = useState(null);
 
     const stackCounts = SRS.getStackCounts(vocabulary, progress);
     // Quiz count should match what buildStudySession returns (learning + new words)
@@ -16,6 +18,12 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
 
     const WORD_GOAL = 1500;
     const progressPercent = Math.round((stackCounts.known / WORD_GOAL) * 100);
+
+    // Load stage data
+    useEffect(() => {
+        const summary = StageManager.getDashboardSummary();
+        setStageData(summary);
+    }, [progress]);
 
     // Daily Japanese facts
     const japaneseFacts = [
@@ -78,6 +86,79 @@ const Dashboard = ({ vocabulary, progress, settings, stats, onStartStudy, onStar
 
     return (
         <div className="dashboard">
+            {/* Learning Path Section - Collapsible */}
+            {stageData && (
+                <div className="dashboard-learning-path card" style={{ marginBottom: 'var(--space-lg)' }}>
+                    <div className="card-header" style={{ marginBottom: showLearningPath ? 'var(--space-lg)' : 0 }}>
+                        <div
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                            onClick={() => setShowLearningPath(!showLearningPath)}
+                        >
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                Your Learning Path
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                    {showLearningPath ? '▲' : '▼'}
+                                </span>
+                            </h3>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                {showLearningPath ? 'Collapse' : 'Expand'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {showLearningPath && (
+                        <>
+
+                    {/* Stage Progress Indicators */}
+                    <div className="stage-progress-row">
+                        {stageData.allStages.map((stage, index) => (
+                            <div
+                                key={stage.id}
+                                className={`stage-indicator ${stage.complete ? 'complete' : ''} ${stage.status === 'active' ? 'active' : ''} ${stage.status === 'locked' ? 'locked' : ''}`}
+                                title={`${stage.name}: ${stage.progress.percent}%`}
+                            >
+                                <div className="stage-indicator-icon">
+                                    {stage.complete ? '✅' : stage.status === 'locked' ? '🔒' : stage.icon}
+                                </div>
+                                <div className="stage-indicator-name">{stage.name}</div>
+                                {stage.status === 'active' && !stage.complete && (
+                                    <div className="stage-indicator-progress">
+                                        <div className="mini-progress-bar">
+                                            <div
+                                                className="mini-progress-fill"
+                                                style={{ width: `${stage.progress.percent}%` }}
+                                            />
+                                        </div>
+                                        <span className="mini-progress-text">{stage.progress.percent}%</span>
+                                    </div>
+                                )}
+                                {index < stageData.allStages.length - 1 && (
+                                    <div className={`stage-connector-line ${stage.complete ? 'complete' : ''}`} />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Current Stage Info */}
+                    {stageData.currentStage && (
+                        <div className="current-stage-info">
+                            <div className="current-stage-label">Currently working on:</div>
+                            <div className="current-stage-name">
+                                <span className="current-stage-icon">{stageData.currentStage.icon}</span>
+                                {stageData.currentStage.name}
+                            </div>
+                            {stageData.nextMilestone && (
+                                <div className="next-milestone-text">
+                                    Next: {stageData.nextMilestone.text}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                        </>
+                    )}
+                </div>
+            )}
+
             {/* Large Study/Quiz Buttons */}
             <div className="main-action-buttons">
                 <button className="main-action-btn study" onClick={onStartStudy}>

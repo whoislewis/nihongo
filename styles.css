@@ -423,10 +423,11 @@ h3 {
 }
 
 .stat-card {
-    background: var(--color-bg-warm);
+    background: var(--color-bg-card);
     border-radius: var(--radius-md);
     padding: var(--space-lg);
     text-align: center;
+    border: 1px solid var(--color-sand);
 }
 
 .stat-value {
@@ -1300,7 +1301,7 @@ h3 {
 }
 
 .main-action-btn.quiz {
-    background: linear-gradient(135deg, var(--color-ochre), var(--color-terracotta));
+    background: linear-gradient(135deg, #FBBF24, #F59E0B);
     color: white;
 }
 
@@ -1370,10 +1371,9 @@ h3 {
     margin-top: var(--space-sm);
 }
 
-/* Did You Know */
+/* Did You Know - clean card without left border */
 .did-you-know-card {
-    background: linear-gradient(135deg, #F0EDE8, #E8E4DD);
-    border-left: 4px solid var(--color-sage);
+    background: var(--color-bg-card);
 }
 
 .did-you-know {

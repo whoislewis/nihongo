@@ -192,26 +192,77 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
         }
     };
 
-    // Kana practice card
-    const renderKanaPracticeCard = () => (
-        <div className="study-card study-card-large">
-            <div className="card-type-badge">Kana Practice</div>
-            <div className="kana-practice-content">
-                <h3>Master Your Kana</h3>
-                <p>Practice recognizing hiragana and katakana characters.</p>
-                <p style={{ marginTop: 'var(--space-md)', color: 'var(--color-text-muted)' }}>
-                    Score 90% or higher to complete this stage.
-                </p>
-            </div>
-            <div className="study-actions-bottom">
-                <button className="btn btn-primary" onClick={() => setShowKanaQuiz(true)}>
-                    Start Kana Quiz
-                </button>
-            </div>
-        </div>
-    );
+    // Kana practice card - shows progress and emphasizes both must be 100%
+    const renderKanaPracticeCard = () => {
+        const hiraganaScore = currentItem.hiraganaScore || 0;
+        const katakanaScore = currentItem.katakanaScore || 0;
 
-    // Intro card (grammar/kanji)
+        return (
+            <div className="study-card study-card-large">
+                <div className="card-type-badge">Stage 1: Kana Mastery</div>
+                <div className="kana-practice-content">
+                    <h3 style={{ marginBottom: 'var(--space-lg)' }}>Master Your Kana First</h3>
+                    <p style={{ marginBottom: 'var(--space-lg)', color: 'var(--color-text-secondary)' }}>
+                        Before learning vocabulary and kanji, you must master the Japanese alphabets.
+                        Both hiragana AND katakana must reach 100%.
+                    </p>
+
+                    <div className="kana-progress-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: 'var(--space-lg)',
+                        marginBottom: 'var(--space-xl)'
+                    }}>
+                        <div className="kana-progress-item" style={{
+                            background: hiraganaScore >= 100 ? 'var(--color-success-light)' : 'var(--color-bg-warm)',
+                            padding: 'var(--space-lg)',
+                            borderRadius: 'var(--radius-md)',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-sm)' }}>
+                                {hiraganaScore >= 100 ? '✅' : 'あ'}
+                            </div>
+                            <div style={{ fontWeight: '600' }}>Hiragana</div>
+                            <div style={{
+                                fontSize: '1.5rem',
+                                color: hiraganaScore >= 100 ? 'var(--color-success)' : 'var(--color-text)'
+                            }}>
+                                {hiraganaScore}%
+                            </div>
+                        </div>
+                        <div className="kana-progress-item" style={{
+                            background: katakanaScore >= 100 ? 'var(--color-success-light)' : 'var(--color-bg-warm)',
+                            padding: 'var(--space-lg)',
+                            borderRadius: 'var(--radius-md)',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-sm)' }}>
+                                {katakanaScore >= 100 ? '✅' : 'ア'}
+                            </div>
+                            <div style={{ fontWeight: '600' }}>Katakana</div>
+                            <div style={{
+                                fontSize: '1.5rem',
+                                color: katakanaScore >= 100 ? 'var(--color-success)' : 'var(--color-text)'
+                            }}>
+                                {katakanaScore}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                        Vocabulary, grammar, and kanji will unlock after kana mastery.
+                    </p>
+                </div>
+                <div className="study-actions-bottom">
+                    <button className="btn btn-primary btn-large" onClick={() => setShowKanaQuiz(true)}>
+                        Start Kana Quiz
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    // Intro card (grammar/kanji) - with audio on examples
     const renderIntroCard = () => (
         <div className="study-card study-card-large">
             <div className="card-type-badge">
@@ -221,9 +272,27 @@ const SmartStudySession = ({ vocabulary, progress, settings, onComplete, onExit 
                 <h3 className="intro-card-title">{currentItem.title}</h3>
                 <p className="intro-card-text">{currentItem.content}</p>
                 {currentItem.example && (
-                    <div className="intro-card-example">
-                        <div className="example-japanese japanese">{currentItem.example}</div>
-                        <div className="example-meaning">{currentItem.exampleMeaning}</div>
+                    <div className="intro-card-example-box" style={{
+                        background: 'var(--color-bg-warm)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: 'var(--space-lg)',
+                        marginTop: 'var(--space-lg)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
+                            <div className="example-japanese japanese" style={{ fontSize: '1.25rem' }}>
+                                {currentItem.example}
+                            </div>
+                            <button
+                                className="btn-audio"
+                                onClick={() => playAudio(currentItem.example)}
+                                style={{ flexShrink: 0 }}
+                            >
+                                🔊
+                            </button>
+                        </div>
+                        <div className="example-meaning" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9375rem' }}>
+                            {currentItem.exampleMeaning}
+                        </div>
                     </div>
                 )}
             </div>

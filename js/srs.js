@@ -5,6 +5,19 @@ const SRS = {
     // SRS intervals in days
     INTERVALS: [1, 3, 7, 14, 30, 60, 120],
 
+    // Type-specific graduation thresholds
+    GRADUATION_THRESHOLDS: {
+        vocabulary: 5,
+        kanji: 3,
+        radical: 2,
+        grammar: 3
+    },
+
+    // Get graduation threshold for item type
+    getGraduationThreshold(itemType) {
+        return this.GRADUATION_THRESHOLDS[itemType] || 5;
+    },
+
     // Calculate next review date based on success/failure
     calculateNextReview(wordData, wasCorrect) {
         const now = new Date();
@@ -257,6 +270,139 @@ const SRS = {
             ...word,
             progress: progress[word.id] || { stack: 'unlearned' }
         }));
+    },
+
+    // === MULTI-TYPE SRS METHODS ===
+
+    // Calculate next review for any item type
+    calculateNextReviewForType(itemData, wasCorrect, itemType) {
+        const now = new Date();
+        let { interval, easeFactor, successCount, failCount } = itemData;
+
+        if (wasCorrect) {
+            successCount++;
+
+            if (successCount === 1) {
+                interval = 1;
+            } else if (successCount === 2) {
+                // Radicals move faster
+                interval = itemType === 'radical' ? 2 : 3;
+            } else {
+                interval = Math.round(interval * easeFactor);
+            }
+
+            easeFactor = Math.min(easeFactor + 0.1, 3.0);
+        } else {
+            failCount++;
+            interval = 1;
+            successCount = Math.max(0, successCount - 2);
+            easeFactor = Math.max(easeFactor - 0.2, 1.3);
+        }
+
+        const nextReview = new Date(now);
+        nextReview.setDate(nextReview.getDate() + interval);
+
+        return {
+            successCount,
+            failCount,
+            interval,
+            easeFactor,
+            lastReview: now.toISOString(),
+            nextReview: nextReview.toISOString()
+        };
+    },
+
+    // Process answer for any item type
+    processAnswerForType(itemId, itemType, wasCorrect, isNew) {
+        const itemData = Storage.getItemProgress(itemId, itemType);
+        const threshold = this.getGraduationThreshold(itemType);
+
+        // Calculate new SRS data
+        const newData = this.calculateNextReviewForType(itemData, wasCorrect, itemType);
+
+        // Check graduation
+        if (newData.successCount >= threshold) {
+            newData.readyToGraduate = true;
+        }
+
+        // Move to learning stack if new
+        if (isNew) {
+            newData.stack = 'learning';
+        }
+
+        // Save updated data
+        Storage.updateItemProgress(itemId, itemType, newData);
+
+        // Record study action
+        Storage.recordStudy(isNew);
+
+        return newData;
+    },
+
+    // Graduate any item type
+    graduateItem(itemId, itemType) {
+        Storage.updateItemProgress(itemId, itemType, {
+            stack: 'known',
+            readyToGraduate: false,
+            graduatedAt: new Date().toISOString()
+        });
+    },
+
+    // Reset any item type
+    resetItem(itemId, itemType) {
+        Storage.updateItemProgress(itemId, itemType, {
+            successCount: 0,
+            readyToGraduate: false,
+            interval: 1,
+            nextReview: new Date().toISOString()
+        });
+    },
+
+    // Get stack counts for any item type from unified progress
+    getUnifiedStackCounts(itemType) {
+        const items = Storage.getItemsByType(itemType);
+        let unlearned = 0;
+        let learning = 0;
+        let known = 0;
+
+        Object.values(items).forEach(item => {
+            if (!item || item.stack === 'unlearned') {
+                unlearned++;
+            } else if (item.stack === 'learning') {
+                learning++;
+            } else if (item.stack === 'known') {
+                known++;
+            }
+        });
+
+        return { unlearned, learning, known, total: Object.keys(items).length };
+    },
+
+    // Get due items for any type from unified progress
+    getDueItemsForType(itemType) {
+        const items = Storage.getItemsByType(itemType);
+        const now = new Date();
+        const dueItems = [];
+
+        Object.entries(items).forEach(([key, data]) => {
+            if (data && data.stack === 'learning') {
+                const nextReview = data.nextReview ? new Date(data.nextReview) : now;
+                if (nextReview <= now) {
+                    dueItems.push({
+                        key,
+                        id: key.replace(`${itemType}_`, ''),
+                        ...data,
+                        isDue: true
+                    });
+                }
+            }
+        });
+
+        return dueItems.sort((a, b) => {
+            const aDate = new Date(a.nextReview || 0);
+            const bDate = new Date(b.nextReview || 0);
+            return aDate - bDate;
+        });
     }
 };
 

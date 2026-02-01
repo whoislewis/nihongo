@@ -137,6 +137,82 @@ const JapaneseUtils = {
             return reading;
         }
         return null;
+    },
+
+    // Check if kana mastery is complete (both hiragana AND katakana at 100%)
+    isKanaMasteryComplete() {
+        const foundationProgress = Storage.getFoundationProgress();
+        const hiraganaScore = foundationProgress?.kana?.hiraganaScore || 0;
+        const katakanaScore = foundationProgress?.kana?.katakanaScore || 0;
+        return hiraganaScore >= 100 && katakanaScore >= 100;
+    },
+
+    // Check if user needs furigana (kana not mastered yet)
+    needsFurigana() {
+        return !this.isKanaMasteryComplete();
+    },
+
+    // Add furigana to text with kanji
+    // Returns array of segments: { text: string, reading?: string, isKanji: boolean }
+    addFuriganaToWord(word, reading) {
+        if (!word || !reading) return [{ text: word || '', isKanji: false }];
+
+        const segments = [];
+        let wordIdx = 0;
+        let readingIdx = 0;
+
+        while (wordIdx < word.length) {
+            const char = word[wordIdx];
+
+            if (this.isKanji(char)) {
+                // Find all consecutive kanji
+                let kanjiRun = char;
+                let kanjiEnd = wordIdx + 1;
+                while (kanjiEnd < word.length && this.isKanji(word[kanjiEnd])) {
+                    kanjiRun += word[kanjiEnd];
+                    kanjiEnd++;
+                }
+
+                // Find the reading for this kanji run
+                // Look for the next kana in the word to know where reading ends
+                let nextKana = '';
+                if (kanjiEnd < word.length) {
+                    nextKana = word[kanjiEnd];
+                }
+
+                // Find where this kana appears in the remaining reading
+                let kanjiReading = '';
+                if (nextKana) {
+                    const nextKanaIdx = reading.indexOf(nextKana, readingIdx);
+                    if (nextKanaIdx > readingIdx) {
+                        kanjiReading = reading.substring(readingIdx, nextKanaIdx);
+                        readingIdx = nextKanaIdx;
+                    } else {
+                        kanjiReading = reading.substring(readingIdx);
+                        readingIdx = reading.length;
+                    }
+                } else {
+                    kanjiReading = reading.substring(readingIdx);
+                    readingIdx = reading.length;
+                }
+
+                segments.push({ text: kanjiRun, reading: kanjiReading, isKanji: true });
+                wordIdx = kanjiEnd;
+            } else {
+                // Kana or other character - just add it
+                segments.push({ text: char, isKanji: false });
+                wordIdx++;
+                // Skip corresponding character in reading
+                if (readingIdx < reading.length &&
+                    (reading[readingIdx] === char ||
+                     this.isHiragana(reading[readingIdx]) ||
+                     this.isKatakana(reading[readingIdx]))) {
+                    readingIdx++;
+                }
+            }
+        }
+
+        return segments;
     }
 };
 

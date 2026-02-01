@@ -5,7 +5,10 @@ const STORAGE_KEYS = {
     USER_SETTINGS: 'nihongo_settings',
     STUDY_STATS: 'nihongo_stats',
     MNEMONICS: 'nihongo_mnemonics',
-    KANJI_NOTES: 'nihongo_kanji_notes'
+    KANJI_NOTES: 'nihongo_kanji_notes',
+    UNIFIED_PROGRESS: 'nihongo_unified_progress',
+    STAGE_PROGRESS: 'nihongo_stage_progress',
+    FOUNDATION_PROGRESS: 'nihongo_foundation_progress'
 };
 
 // Default settings
@@ -16,7 +19,49 @@ const DEFAULT_SETTINGS = {
     showFurigana: true,
     showSentences: true,
     audioEnabled: false,
-    quizDirection: 'both' // 'jp-to-en', 'en-to-jp', 'both'
+    quizDirection: 'both', // 'jp-to-en', 'en-to-jp', 'both'
+    softDependencies: true, // If false, strictly enforce dependencies
+    autoExpandKanji: true   // Auto-expand kanji breakdown for new vocab
+};
+
+// Default stage progress
+const DEFAULT_STAGE_PROGRESS = {
+    currentStage: 'foundations',
+    completedStages: [],
+    stageData: {
+        foundations: {
+            kanaScore: 0,
+            grammarCardsViewed: [],
+            kanjiCardsViewed: []
+        },
+        core_radicals: {
+            radicalsLearned: []
+        },
+        vocabulary_kanji: {
+            wordsLearned: 0
+        },
+        advanced_grammar: {
+            unlocked: false,
+            patternsLearned: []
+        }
+    }
+};
+
+// Default foundation progress
+const DEFAULT_FOUNDATION_PROGRESS = {
+    kana: {
+        hiraganaScore: 0,
+        katakanaScore: 0,
+        lastQuizDate: null
+    },
+    grammarIntro: {
+        viewedCards: [],
+        completed: false
+    },
+    kanjiIntro: {
+        viewedCards: [],
+        completed: false
+    }
 };
 
 // Default stats
@@ -241,9 +286,241 @@ const Storage = {
     // Clear all data
     clearAll() {
         Object.values(STORAGE_KEYS).forEach(key => this.remove(key));
+    },
+
+    // === UNIFIED PROGRESS SYSTEM ===
+
+    // Get unified progress (all item types)
+    getUnifiedProgress() {
+        return this.get(STORAGE_KEYS.UNIFIED_PROGRESS, {});
+    },
+
+    // Save unified progress
+    saveUnifiedProgress(progress) {
+        return this.set(STORAGE_KEYS.UNIFIED_PROGRESS, progress);
+    },
+
+    // Get progress for a specific item (vocab, kanji, radical, grammar)
+    getItemProgress(itemId, itemType) {
+        const key = `${itemType}_${itemId}`;
+        const progress = this.getUnifiedProgress();
+        return progress[key] || this.getDefaultItemProgress(itemType);
+    },
+
+    // Get default progress for an item type
+    getDefaultItemProgress(itemType) {
+        const baseProgress = {
+            stack: 'unlearned',
+            successCount: 0,
+            failCount: 0,
+            lastReview: null,
+            nextReview: null,
+            interval: 1,
+            easeFactor: 2.5,
+            dependencies: []
+        };
+
+        // Type-specific graduation thresholds
+        const thresholds = {
+            vocabulary: 5,
+            kanji: 3,
+            radical: 2,
+            grammar: 3
+        };
+
+        return {
+            ...baseProgress,
+            graduationThreshold: thresholds[itemType] || 5
+        };
+    },
+
+    // Update progress for a specific item
+    updateItemProgress(itemId, itemType, data) {
+        const key = `${itemType}_${itemId}`;
+        const progress = this.getUnifiedProgress();
+        const currentData = progress[key] || this.getDefaultItemProgress(itemType);
+        progress[key] = { ...currentData, ...data, type: itemType };
+        return this.saveUnifiedProgress(progress);
+    },
+
+    // Get all items of a specific type
+    getItemsByType(itemType) {
+        const progress = this.getUnifiedProgress();
+        const items = {};
+        Object.keys(progress).forEach(key => {
+            if (key.startsWith(`${itemType}_`)) {
+                items[key] = progress[key];
+            }
+        });
+        return items;
+    },
+
+    // Get items by stack for a specific type
+    getItemsByStack(itemType, stack) {
+        const items = this.getItemsByType(itemType);
+        return Object.entries(items)
+            .filter(([_, data]) => data.stack === stack)
+            .map(([key, data]) => ({ key, ...data }));
+    },
+
+    // === STAGE PROGRESS ===
+
+    // Get stage progress
+    getStageProgress() {
+        return { ...DEFAULT_STAGE_PROGRESS, ...this.get(STORAGE_KEYS.STAGE_PROGRESS, {}) };
+    },
+
+    // Save stage progress
+    saveStageProgress(progress) {
+        return this.set(STORAGE_KEYS.STAGE_PROGRESS, progress);
+    },
+
+    // Update current stage
+    setCurrentStage(stageId) {
+        const progress = this.getStageProgress();
+        progress.currentStage = stageId;
+        return this.saveStageProgress(progress);
+    },
+
+    // Mark stage as complete
+    completeStage(stageId) {
+        const progress = this.getStageProgress();
+        if (!progress.completedStages.includes(stageId)) {
+            progress.completedStages.push(stageId);
+        }
+        return this.saveStageProgress(progress);
+    },
+
+    // Check if stage is complete
+    isStageComplete(stageId) {
+        const progress = this.getStageProgress();
+        return progress.completedStages.includes(stageId);
+    },
+
+    // === FOUNDATION PROGRESS ===
+
+    // Get foundation progress
+    getFoundationProgress() {
+        return { ...DEFAULT_FOUNDATION_PROGRESS, ...this.get(STORAGE_KEYS.FOUNDATION_PROGRESS, {}) };
+    },
+
+    // Save foundation progress
+    saveFoundationProgress(progress) {
+        return this.set(STORAGE_KEYS.FOUNDATION_PROGRESS, progress);
+    },
+
+    // Update kana score
+    updateKanaScore(type, score) {
+        const progress = this.getFoundationProgress();
+        if (type === 'hiragana') {
+            progress.kana.hiraganaScore = Math.max(progress.kana.hiraganaScore, score);
+        } else if (type === 'katakana') {
+            progress.kana.katakanaScore = Math.max(progress.kana.katakanaScore, score);
+        }
+        progress.kana.lastQuizDate = new Date().toISOString();
+        return this.saveFoundationProgress(progress);
+    },
+
+    // Mark grammar intro card as viewed
+    viewGrammarIntroCard(cardId) {
+        const progress = this.getFoundationProgress();
+        if (!progress.grammarIntro.viewedCards.includes(cardId)) {
+            progress.grammarIntro.viewedCards.push(cardId);
+        }
+        if (progress.grammarIntro.viewedCards.length >= 6) {
+            progress.grammarIntro.completed = true;
+        }
+        return this.saveFoundationProgress(progress);
+    },
+
+    // Mark kanji intro card as viewed
+    viewKanjiIntroCard(cardId) {
+        const progress = this.getFoundationProgress();
+        if (!progress.kanjiIntro.viewedCards.includes(cardId)) {
+            progress.kanjiIntro.viewedCards.push(cardId);
+        }
+        if (progress.kanjiIntro.viewedCards.length >= 6) {
+            progress.kanjiIntro.completed = true;
+        }
+        return this.saveFoundationProgress(progress);
+    },
+
+    // === RADICAL PROGRESS ===
+
+    // Mark radical as learned
+    learnRadical(radicalChar) {
+        return this.updateItemProgress(radicalChar, 'radical', {
+            stack: 'learning',
+            lastReview: new Date().toISOString()
+        });
+    },
+
+    // Get learned radicals count
+    getLearnedRadicalsCount() {
+        const radicals = this.getItemsByType('radical');
+        return Object.values(radicals).filter(r =>
+            r.stack === 'learning' || r.stack === 'known'
+        ).length;
+    },
+
+    // === DATA MIGRATION ===
+
+    // Migrate existing data to unified format
+    migrateToUnifiedProgress() {
+        const migrated = this.get('nihongo_migration_complete', false);
+        if (migrated) return;
+
+        // Migrate word progress
+        const oldWordProgress = this.getWordProgress();
+        const unifiedProgress = this.getUnifiedProgress();
+
+        Object.entries(oldWordProgress).forEach(([wordId, data]) => {
+            const key = `vocabulary_${wordId}`;
+            if (!unifiedProgress[key]) {
+                unifiedProgress[key] = {
+                    ...data,
+                    type: 'vocabulary',
+                    graduationThreshold: 5
+                };
+            }
+        });
+
+        this.saveUnifiedProgress(unifiedProgress);
+        this.set('nihongo_migration_complete', true);
+        console.log('Migration to unified progress complete');
+    },
+
+    // Export all data including new progress systems
+    exportData() {
+        return {
+            wordProgress: this.getWordProgress(),
+            unifiedProgress: this.getUnifiedProgress(),
+            stageProgress: this.getStageProgress(),
+            foundationProgress: this.getFoundationProgress(),
+            settings: this.getSettings(),
+            stats: this.getStats(),
+            mnemonics: this.getMnemonics(),
+            kanjiNotes: this.getKanjiNotesAll(),
+            exportDate: new Date().toISOString()
+        };
+    },
+
+    // Import data including new progress systems
+    importData(data) {
+        if (data.wordProgress) this.saveWordProgress(data.wordProgress);
+        if (data.unifiedProgress) this.saveUnifiedProgress(data.unifiedProgress);
+        if (data.stageProgress) this.saveStageProgress(data.stageProgress);
+        if (data.foundationProgress) this.saveFoundationProgress(data.foundationProgress);
+        if (data.settings) this.saveSettings(data.settings);
+        if (data.stats) this.saveStats(data.stats);
+        if (data.mnemonics) this.set(STORAGE_KEYS.MNEMONICS, data.mnemonics);
+        if (data.kanjiNotes) this.set(STORAGE_KEYS.KANJI_NOTES, data.kanjiNotes);
+        return true;
     }
 };
 
 // Make available globally
 window.Storage = Storage;
 window.DEFAULT_SETTINGS = DEFAULT_SETTINGS;
+window.DEFAULT_STAGE_PROGRESS = DEFAULT_STAGE_PROGRESS;
+window.DEFAULT_FOUNDATION_PROGRESS = DEFAULT_FOUNDATION_PROGRESS;
